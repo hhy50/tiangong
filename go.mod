@@ -1,3 +1,3 @@
-module space_station
+module tiangong
 
 go 1.17
