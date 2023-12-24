@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"tiangong/common/errors"
-	"tiangong/common/file"
+	"tiangong/common/io"
 )
 
 type Config struct {
@@ -52,7 +52,7 @@ func NewServer(cp string) (*Server, error) {
 		cp = filepath.Join(cur, "tiangong.config.json")
 	}
 
-	bytes, err := file.ReadAll(cp)
+	bytes, err := io.ReadFile(cp)
 	if err != nil {
 		return nil, err
 	}

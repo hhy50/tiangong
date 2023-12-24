@@ -1,11 +1,11 @@
-package file
+package io
 
 import (
 	"io"
 	"os"
 )
 
-func ReadAll(path string) ([]byte, error) {
+func ReadFile(path string) ([]byte, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err

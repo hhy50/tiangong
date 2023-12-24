@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"tiangong/common"
 	"tiangong/kernel"
 	"tiangong/server"
+	"time"
 )
 
 var (
@@ -19,9 +21,9 @@ func init() {
 	  | | | | (_| | | | |_____| |_| | (_) | | | | (_| |  ___) |  __/ |   \ V /  __/ |
 	  |_| |_|\__,_|_| |_|      \____|\___/|_| |_|\__, | |____/ \___|_|    \_/ \___|_|
 	                                             |___/
-	Kernel Version: %s
+	Kernel Version: %s, Now: %s
 `
-	fmt.Printf(banner, kernel.Version())
+	fmt.Printf(banner, kernel.Version(), time.Now().Format(common.DateFormat))
 	flag.StringVar(&cp, "conf", "", "config file path")
 }
 
