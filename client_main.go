@@ -1,3 +1,4 @@
+// +build client
 package main
 
 import (
@@ -19,7 +20,7 @@ func init() {
 
 // go build -o client main.go client.go
 // ./client -host localhost -port 2023
-func main() {
+func main1() {
 	flag.Parse()
 	tclient := client.NewClient(host, port)
 	if tclient == nil {

@@ -1,89 +1,69 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
-	"sync"
+	"os"
+	"path/filepath"
+	"tiangong/common/errors"
+	"tiangong/common/file"
 )
 
-type ServerConfig struct {
-	Host string
-	Port string
-}
-
-type Book struct {
-	Name   string
-	Pricae float32
+type Config struct {
+	Host     string
+	TcpPort  int
+	HttpPort int
+	Passwd   string
 }
 
 type Server struct {
-	c         *ServerConfig
-	OnlineSet map[string]*User
-
-	Lock    sync.RWMutex
-	Message chan string
-
-	// ===========
-	Book1 *Book
-	Book2 *Book
-	Book3 *Book
+	conf *Config
 }
 
-func (s *Server) Start() {
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", s.c.Host, s.c.Port))
+func (s *Server) Start() error {
+	conf := s.conf
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", conf.Host, conf.TcpPort))
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("监听主机", s.c.Host, ", 监听端口:", s.c.Port)
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			panic(err)
-		}
+	fmt.Printf("listener host:%s, listener tcp port:%s, listener http port:%s", conf.Host, conf.TcpPort, conf.HttpPort)
+	go func() {
+		for {
+			_, err := listener.Accept()
+			if err != nil {
 
-		user := NewUser(s, conn)
-		s.AddUser(user)
-
-		go func() {
-			for {
-				msg := <-s.Message
-				for _, user := range s.OnlineSet {
-					user.C <- []byte(msg)
-					// user.conn.Write([]byte(msg))
-				}
 			}
-		}()
-	}
-}
-
-func (s *Server) AddUser(user *User) {
-	s.Lock.Lock()
-	defer s.Lock.Unlock()
-
-	s.OnlineSet[user.Addr] = user
-	go user.ListenReadMessage()
-	go user.ListenWriteMessage()
-	fmt.Println(user.Addr, " connect success")
-
-	s.BroadMessage("[" + user.Addr + "]: 已上线")
-}
-
-func (s *Server) BroadMessage(msg string) {
-	fmt.Println("发送广播消息: [" + msg + "]")
-	s.Message <- msg
-}
-
-func NewServer(config *ServerConfig) *Server {
-	if config == nil {
-		config = &ServerConfig{
-			Host: "localhost",
-			Port: "2023",
 		}
+	}()
+	return nil
+}
+
+func (s *Server) Stop() error {
+	return nil
+}
+
+func NewServer(cp string) (*Server, error) {
+	if cp == "" {
+		cur, err := os.Executable()
+		if err != nil {
+			return nil, errors.NewError("use -conf {path} to specify the configuration file", err)
+		}
+		cp = filepath.Join(cur, "tiangong.config.json")
 	}
+
+	bytes, err := file.ReadAll(cp)
+	if err != nil {
+		return nil, err
+	}
+
+	config := &Config{}
+	if err := json.Unmarshal(bytes, config); err != nil {
+		return nil, err
+	}
+
 	server := &Server{
-		c:         config,
-		OnlineSet: make(map[string]*User),
-		Message:   make(chan string, 10),
+		conf: config,
 	}
-	return server
+	return server, nil
 }
