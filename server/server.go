@@ -1,19 +1,42 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
+	"tiangong/common"
 	"tiangong/common/errors"
 	"tiangong/common/io"
+	"tiangong/common/log"
+	"tiangong/server/conf"
+
+	"github.com/google/uuid"
+	"github.com/magiconair/properties"
 )
+
+var DefaultConfPath = func() string {
+	exec, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	return filepath.Dir(exec)
+}
+
+var getRedomPasswd = func() string {
+	exec, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	return filepath.Dir(exec)
+}
 
 type Config struct {
 	Host     string
 	TcpPort  int
 	HttpPort int
+	UserName string
 	Passwd   string
 }
 
@@ -23,11 +46,11 @@ type Server struct {
 
 func (s *Server) Start() error {
 	conf := s.conf
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", conf.Host, conf.TcpPort))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", conf.Host, conf.TcpPort))
 	if err != nil {
 		return err
 	}
-	fmt.Printf("listener host:%s, listener tcp port:%s, listener http port:%s", conf.Host, conf.TcpPort, conf.HttpPort)
+	fmt.Printf("listener host:%s, listener tcp port:%d, listener http port:%d \n", conf.Host, conf.TcpPort, conf.HttpPort)
 	go func() {
 		for {
 			_, err := listener.Accept()
@@ -43,13 +66,15 @@ func (s *Server) Stop() error {
 	return nil
 }
 
-func NewServer(cp string) (*Server, error) {
+func loadConfig(cp string) (*Config, error) {
 	if cp == "" {
-		cur, err := os.Executable()
-		if err != nil {
-			return nil, errors.NewError("use -conf {path} to specify the configuration file", err)
-		}
-		cp = filepath.Join(cur, "tiangong.config.json")
+		cur := DefaultConfPath()
+		cp = filepath.Join(cur, "tiangong.conf")
+	}
+	log.Debug("find conf file path: %s", cp)
+
+	if common.FileNotExist(cp) {
+		return nil, errors.NewError("useage: -conf {path} to specify the configuration file", nil)
 	}
 
 	bytes, err := io.ReadFile(cp)
@@ -57,13 +82,30 @@ func NewServer(cp string) (*Server, error) {
 		return nil, err
 	}
 
-	config := &Config{}
-	if err := json.Unmarshal(bytes, config); err != nil {
+	properties, err := properties.Load(bytes, properties.UTF8)
+	if err != nil {
 		return nil, err
 	}
 
+	config := Config{
+		TcpPort:  properties.GetInt(conf.TcpPort.First, conf.TcpPort.Second),
+		HttpPort: properties.GetInt(conf.HttpPort.First, conf.HttpPort.Second),
+		UserName: strings.Trim(properties.GetString(conf.UserName.First, conf.UserName.Second), "\""),
+		Passwd:   strings.Trim(properties.GetString(conf.Passwd.First, conf.Passwd.Second), "\""),
+	}
+	if config.Passwd == "" {
+		log.Warn("httpPasswd is not set, Generate a random password: %s", uuid.New().String())
+	}
+	return &config, nil
+}
+
+func NewServer(cp string) (*Server, error) {
+	conf, err := loadConfig(cp)
+	if err != nil {
+		return nil, err
+	}
 	server := &Server{
-		conf: config,
+		conf: conf,
 	}
 	return server, nil
 }

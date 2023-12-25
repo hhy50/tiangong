@@ -1,6 +1,9 @@
 package conf
 
+import (
 
-func Parase() {
-	
+)
+
+func init() {
+
 }
