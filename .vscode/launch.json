@@ -10,7 +10,8 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["-conf", "${workspaceFolder}/tiangong.conf"],
+            "args": ["-conf", "${workspaceFolder}/tiangong.conf",
+                        "-log.level", "INFO", "-log.path", "${workspaceFolder}"],
             "dlvFlags": ["--check-go-version=false"]
         }
     ]
