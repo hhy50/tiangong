@@ -1,21 +1,40 @@
 package log
 
 import (
+	"flag"
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
+	"tiangong/common"
 )
+
+var getLogFile = func(path string) string {
+	return filepath.Join(path, common.LogFilName)
+}
 
 var (
-	level Level
+	level string
+	path  string
 
-	logger = &loggerImpl{
-		impl:  log.New(io.MultiWriter(os.Stdout), "", log.Ldate|log.Ltime),
-		Level: level,
-	}
+	// system log
+	logger *loggerImpl
 )
+
+func init() {
+	flag.StringVar(&level, "log.level", "INFO", "log level, options: DEBUG, INFO, WARN, ERROR")
+	flag.StringVar(&path, "log.path", "", "log file storeage path")
+}
+
+func InitLog() {
+	write := getLogWriter(path)
+	logger = &loggerImpl{
+		impl:  log.New(write, "", log.Ldate|log.Ltime),
+		Level: LevelValueOf(level),
+	}
+}
 
 type Logger interface {
 	debug(string, ...any)
@@ -89,4 +108,16 @@ func getCaller(depth int) (string, int, bool) {
 		return last, line, true
 	}
 	return "", -1, false
+}
+
+func getLogWriter(path string) io.Writer {
+	if path == "" {
+		return os.Stdout
+	}
+
+	file, err := os.OpenFile(getLogFile(path), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		panic(err)
+	}
+	return file
 }

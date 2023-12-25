@@ -1,0 +1,8 @@
+2023/12/26 21:46:39 [INFO] tiangong'server start...
+2023/12/26 21:46:39 [DEBUG] find conf file path: C:\Users\hanhaiyang\VscodeProjects\tian-gong/tiangong.conf
+2023/12/26 21:46:39 [DEBUG] load config: httpPort = 2023
+username =
+passwd =
+tcpPort = 2024
+
+2023/12/26 21:46:39 [INFO] tiangong'server started

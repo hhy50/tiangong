@@ -22,3 +22,17 @@ func (l Level) String() string {
 	}
 	return ""
 }
+
+func LevelValueOf(level string) Level {
+	switch level {
+	case "DEBUG":
+		return Level_Debug
+	case "INFO":
+		return Level_Info
+	case "WARN":
+		return Level_Warn
+	case "ERROR":
+		return Level_Error
+	}
+	return Level_Info
+}
