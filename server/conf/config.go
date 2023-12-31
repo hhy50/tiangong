@@ -12,9 +12,9 @@ import (
 	"github.com/magiconair/properties"
 )
 
-type ServerConfig struct {
+type Config struct {
 	Host     string
-	TcpPort  int
+	SrvPort  int
 	HttpPort int
 	UserName string
 	Passwd   string
@@ -28,18 +28,18 @@ var getExecPathFunc = func() string {
 	return filepath.Dir(exec)
 }
 
-func LoadConfigWithPath(cp string) (*ServerConfig, error) {
-	if cp == "" {
+func LoadConfig(input string) (*Config, error) {
+	if input == "" {
 		cur := getExecPathFunc()
-		cp = filepath.Join(cur, "tiangong.conf")
+		input = filepath.Join(cur, "tiangong.conf")
 	}
-	log.Debug("find conf file path: %s", cp)
+	log.Debug("find conf file path: %s", input)
 
-	if !common.FileExist(cp) {
+	if !common.FileExist(input) {
 		return nil, errors.NewError("useage: -conf {path} to specify the configuration file", nil)
 	}
 
-	bytes, err := io.ReadFile(cp)
+	bytes, err := io.ReadFile(input)
 	if err != nil {
 		return nil, err
 	}
@@ -49,14 +49,16 @@ func LoadConfigWithPath(cp string) (*ServerConfig, error) {
 		return nil, err
 	}
 	log.Debug("load config: %+v \n", properties.String())
-	config := ServerConfig{
-		TcpPort:  properties.GetInt(TcpPort.First, TcpPort.Second),
-		HttpPort: properties.GetInt(HttpPort.First, HttpPort.Second),
-		UserName: properties.GetString(UserName.First, UserName.Second),
-		Passwd:   properties.GetString(UserName.First, UserName.Second),
+	config := Config{
+		SrvPort:  properties.GetInt(SrvPortDef.First, SrvPortDef.Second),
+		HttpPort: properties.GetInt(HttpPortDef.First, HttpPortDef.Second),
+		UserName: properties.GetString(UserNameDef.First, UserNameDef.Second),
+		Passwd:   properties.GetString(PasswdDef.First, PasswdDef.Second),
 	}
 	if config.Passwd == "" {
-		log.Warn("httpPasswd is not set, Generate a random password: %s", uuid.New().String())
+		passwd := uuid.New().String()
+		log.Warn("admin.httpPasswd is not set, Generate a random password: %s", passwd)
+		config.Passwd = passwd
 	}
 	return &config, nil
 }

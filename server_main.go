@@ -45,10 +45,10 @@ func main() {
 		}
 		panic(err)
 	}
+
 	server.Start()
 	defer server.Stop()
 	log.Info("tiangong'server started")
-
 	pauseProcesss()
 }
 
