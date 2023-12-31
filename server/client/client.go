@@ -1,20 +1,18 @@
 package client
 
-import "net"
+import (
+	"net"
+)
 
 type Client struct {
 	Name string
-
 }
 
 func NewClient(name string, conn net.Conn) Client {
 
-	return Client{
-
-	}
+	return Client{}
 }
 
-
-func ConnHanlder(conn net.Conn) {
+func ConnHandler(conn net.Conn) {
 
 }

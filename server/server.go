@@ -35,7 +35,7 @@ const (
 )
 
 var (
-	connHander = client.ConnHanlder
+	connHandler = client.ConnHandler
 
 	getRedomPasswd = func() string {
 		exec, err := os.Executable()
@@ -53,7 +53,9 @@ func (s *tgServer) Start() error {
 	if s.Status != INIT {
 		return errors.NewError("Duplicate invoke start() error", nil)
 	}
-	s.TcpSrv.Listen(connHander)
+	if err := s.TcpSrv.Listen(connHandler); err != nil {
+		return err
+	}
 
 	s.Status = RUNNING
 	return nil
@@ -64,20 +66,20 @@ func (s *tgServer) Stop() {
 }
 
 func NewServer(input string) (Server, error) {
-	conf, err := conf.LoadConfig(input)
+	config, err := conf.LoadConfig(input)
 	if err != nil {
 		return nil, err
 	}
 
 	admin := admin.AdminServer{
-		HttpPort: conf.HttpPort,
-		UserName: conf.UserName,
-		Password: conf.Passwd,
+		HttpPort: config.HttpPort,
+		UserName: config.UserName,
+		Password: config.Passwd,
 	}
 
 	tcpSrv := net.TcpServer{
-		Host: conf.Host,
-		Port: conf.SrvPort,
+		Host: config.Host,
+		Port: config.SrvPort,
 	}
 
 	svr := &tgServer{

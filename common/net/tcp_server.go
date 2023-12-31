@@ -23,7 +23,7 @@ func (s *TcpServer) Listen(handler ConnHandler) error {
 		return err
 	}
 	go ListenConn(listener, handler, s.ctx)
-	log.Info("Listen Host", s.Host, ", Port:", s.Port)
+	log.Info("Listen Host: %s, port: %d", s.Host, s.Port)
 	return nil
 }
 

@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"tiangong/common"
 	"tiangong/common/errors"
-	"tiangong/common/io"
 	"tiangong/common/log"
 
 	"github.com/google/uuid"
@@ -38,26 +37,21 @@ func LoadConfig(input string) (*Config, error) {
 	if !common.FileExist(input) {
 		return nil, errors.NewError("useage: -conf {path} to specify the configuration file", nil)
 	}
-
-	bytes, err := io.ReadFile(input)
+	prop, err := properties.LoadFile(input, properties.UTF8)
 	if err != nil {
 		return nil, err
 	}
-
-	properties, err := properties.Load(bytes, properties.UTF8)
-	if err != nil {
-		return nil, err
-	}
-	log.Debug("load config: %+v \n", properties.String())
+	log.Debug("load config: %+v \n", prop.String())
 	config := Config{
-		SrvPort:  properties.GetInt(SrvPortDef.First, SrvPortDef.Second),
-		HttpPort: properties.GetInt(HttpPortDef.First, HttpPortDef.Second),
-		UserName: properties.GetString(UserNameDef.First, UserNameDef.Second),
-		Passwd:   properties.GetString(PasswdDef.First, PasswdDef.Second),
+		Host:     prop.GetString(HostDef.First, HostDef.Second),
+		SrvPort:  prop.GetInt(SrvPortDef.First, SrvPortDef.Second),
+		HttpPort: prop.GetInt(HttpPortDef.First, HttpPortDef.Second),
+		UserName: prop.GetString(UserNameDef.First, UserNameDef.Second),
+		Passwd:   prop.GetString(PasswdDef.First, PasswdDef.Second),
 	}
 	if config.Passwd == "" {
 		passwd := uuid.New().String()
-		log.Warn("admin.httpPasswd is not set, Generate a random password: %s", passwd)
+		log.Warn("httpPasswd is not set, Generate a random password: %s", passwd)
 		config.Passwd = passwd
 	}
 	return &config, nil
