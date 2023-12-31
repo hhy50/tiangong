@@ -23,25 +23,18 @@ func (s *Client) connect() {
 		for {
 			len, err := c.Read(buf)
 			if len == 0 {
-				fmt.Println("服务器已停止")
 				return
 			}
 			if err != nil {
-				fmt.Println("读取异常")
 				return
 			}
-			msg := string(buf[:len-1])
-			fmt.Println("收到服务端消息: ["+msg+"], 消息长度: ", len)
+			//msg := string(buf[:len-1])
 		}
 	}(s.conn)
 }
 
 func (s *Client) Write(msg []byte) {
-	n, err := s.conn.Write(msg)
-	if err != nil {
-		fmt.Println("数据写入错误,", err)
-	}
-	fmt.Println("写入数据长度,", n)
+	s.conn.Write(msg)
 }
 
 func NewClient(host string, port int) *Client {

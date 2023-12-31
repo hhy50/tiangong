@@ -1,5 +1,4 @@
 //go:build server
-// +build server
 
 package main
 
@@ -38,12 +37,12 @@ func init() {
 func main() {
 	flag.Parse()
 	log.InitLog()
-	log.Info("tiangong'server start...")
+	log.Info("TianGong Server start...")
 
 	server, err := server.NewServer(cp)
 	if err != nil {
 		if e, ok := err.(*errors.Error); ok {
-			fmt.Printf("[error] %s", e.Error())
+			log.Error("TianGong Server start error %s", e.Error())
 			return
 		}
 		panic(err)
@@ -51,7 +50,7 @@ func main() {
 
 	server.Start()
 	defer server.Stop()
-	log.Info("tiangong'server started")
+	log.Info("TianGong Server started")
 	pauseProcesss()
 }
 
