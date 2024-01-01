@@ -62,6 +62,8 @@ func (s *tgServer) Start() error {
 }
 
 func (s *tgServer) Stop() {
+	s.Admin.Stop()
+	s.TcpSrv.Stop()
 	log.Warn("TianGong Server end...")
 }
 
@@ -71,7 +73,7 @@ func NewServer(input string) (Server, error) {
 		return nil, err
 	}
 
-	admin := admin.AdminServer{
+	adm := admin.AdminServer{
 		HttpPort: config.HttpPort,
 		UserName: config.UserName,
 		Password: config.Passwd,
@@ -83,7 +85,7 @@ func NewServer(input string) (Server, error) {
 	}
 
 	svr := &tgServer{
-		Admin:   admin,
+		Admin:   adm,
 		Clients: make(map[string]*client.Client),
 		Status:  INIT,
 		TcpSrv:  tcpSrv,

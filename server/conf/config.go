@@ -28,7 +28,7 @@ var getExecPathFunc = func() string {
 }
 
 func LoadConfig(input string) (*Config, error) {
-	if input == "" {
+	if common.IsEmpty(input) {
 		cur := getExecPathFunc()
 		input = filepath.Join(cur, "tiangong.conf")
 	}
@@ -49,7 +49,7 @@ func LoadConfig(input string) (*Config, error) {
 		UserName: prop.GetString(UserNameDef.First, UserNameDef.Second),
 		Passwd:   prop.GetString(PasswdDef.First, PasswdDef.Second),
 	}
-	if config.Passwd == "" {
+	if common.IsEmpty(config.Passwd) {
 		passwd := uuid.New().String()
 		log.Warn("httpPasswd is not set, Generate a random password: %s", passwd)
 		config.Passwd = passwd

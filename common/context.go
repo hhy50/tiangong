@@ -1,9 +1,11 @@
-package context
+package common
 
 import "context"
 
 var (
-	empty = Context{Context: context.Background()}
+	EmptyCtx = context.Background()
+
+	ListenerCtxKey = "listener"
 )
 
 type CancelFunc = context.CancelFunc
@@ -18,15 +20,6 @@ func (c *Context) Add(key interface{}, value interface{}) {
 	}
 }
 
-func Background() Context {
-	return empty
-}
-
 func Wrap(c context.Context) Context {
 	return Context{Context: c}
-}
-
-func WithCancel(p Context) (Context, CancelFunc) {
-	ctx, cf := context.WithCancel(p)
-	return Wrap(ctx), cf
 }

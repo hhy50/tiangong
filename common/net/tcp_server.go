@@ -1,39 +1,47 @@
 package net
 
 import (
+	"context"
 	"fmt"
 	"net"
-	"tiangong/common/context"
+	"tiangong/common"
 	"tiangong/common/log"
 )
+
+var logPrefix = "[TCP]"
 
 type TcpServer struct {
 	Host string
 	Port int
 
-	ctx    context.Context
+	ctx    common.Context
 	cancel func()
 }
 
 func (s *TcpServer) Listen(handler ConnHandler) error {
-	s.ctx, s.cancel = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(common.EmptyCtx)
+	s.ctx, s.cancel = common.Wrap(ctx), cancel
 
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.Host, s.Port))
 	if err != nil {
 		return err
 	}
-	go ListenConn(listener, handler, s.ctx)
-	log.Info("Listen Host: %s, port: %d", s.Host, s.Port)
+	go listenConnect(listener, handler, s.ctx)
+
+	s.ctx.Add(common.ListenerCtxKey, listener)
+	log.Info("%s Listen Host: %s, port: %d", logPrefix, s.Host, s.Port)
 	return nil
 }
 
 func (s *TcpServer) Stop() {
 	s.cancel()
+	if listener, ok := s.ctx.Value(common.ListenerCtxKey).(net.Listener); ok {
+		log.Warn("%s listener stopping...", logPrefix)
+		_ = listener.Close()
+	}
 }
 
-func ListenConn(listener net.Listener, connHander ConnHandler, ctx context.Context) {
-	defer listener.Close()
-
+func listenConnect(listener net.Listener, connHandler ConnHandler, ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -43,8 +51,7 @@ func ListenConn(listener net.Listener, connHander ConnHandler, ctx context.Conte
 			if err != nil {
 				continue
 			}
-			connHander(conn)
+			connHandler(conn)
 		}
 	}
-
 }

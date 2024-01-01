@@ -25,7 +25,7 @@ var (
 
 func init() {
 	flag.StringVar(&level, "log.level", "INFO", "log level, options: DEBUG, INFO, WARN, ERROR")
-	flag.StringVar(&path, "log.path", "", "log file storeage path")
+	flag.StringVar(&path, "log.path", "", "log file storage path")
 }
 
 func InitLog() {
@@ -96,8 +96,20 @@ func format(message string, level Level) string {
 	return strings.Join([]string{"[", level.String(), "] ", message}, "")
 }
 
-func formatStackTrace(messgae string) string {
-	return format(messgae, Level_Error)
+func formatStackTrace(message string) string {
+	return format(message, Level_Error)
+}
+
+func getLogWriter(path string) io.Writer {
+	if common.IsEmpty(path) {
+		return os.Stdout
+	}
+
+	file, err := os.OpenFile(getLogFile(path), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		panic(err)
+	}
+	return file
 }
 
 func getCaller(depth int) (string, int, bool) {
@@ -108,16 +120,4 @@ func getCaller(depth int) (string, int, bool) {
 		return last, line, true
 	}
 	return "", -1, false
-}
-
-func getLogWriter(path string) io.Writer {
-	if path == "" {
-		return os.Stdout
-	}
-
-	file, err := os.OpenFile(getLogFile(path), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		panic(err)
-	}
-	return file
 }
