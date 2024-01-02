@@ -51,10 +51,10 @@ func main() {
 	server.Start()
 	defer server.Stop()
 	log.Info("TianGong Server started")
-	pauseProcesss()
+	pauseProcess()
 }
 
-func pauseProcesss() {
+func pauseProcess() {
 	osSignals := make(chan os.Signal, 1)
 	signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
 	<-osSignals
