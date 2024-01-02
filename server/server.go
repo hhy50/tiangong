@@ -1,8 +1,6 @@
 package server
 
 import (
-	"os"
-	"path/filepath"
 	"tiangong/common/errors"
 	"tiangong/common/lock"
 	"tiangong/common/log"
@@ -36,14 +34,6 @@ const (
 
 var (
 	connHandler = client.ConnHandler
-
-	getRedomPasswd = func() string {
-		exec, err := os.Executable()
-		if err != nil {
-			return ""
-		}
-		return filepath.Dir(exec)
-	}
 )
 
 func (s *tgServer) Start() error {
@@ -65,6 +55,11 @@ func (s *tgServer) Stop() {
 	s.Admin.Stop()
 	s.TcpSrv.Stop()
 	log.Warn("TianGong Server end...")
+}
+
+func (s *tgServer) AddMapping(src string, sp int, dest string, dp int) error {
+
+	return nil
 }
 
 func NewServer(input string) (Server, error) {
