@@ -31,3 +31,10 @@ func IsNotEmpty(obj interface{}) bool {
 	}
 	return obj != nil
 }
+
+func Min(i1 int, i2 int) int {
+	if i1 > i2 {
+		return i2
+	}
+	return i1
+}
