@@ -11,8 +11,11 @@ import (
 	"tiangong/common"
 )
 
-var getLogFile = func(path string) string {
-	return filepath.Join(path, common.LogFilName)
+var getLogFile = func(path string) (string, error) {
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
+		return "", nil
+	}
+	return filepath.Join(path, common.LogFilName), nil
 }
 
 var (
@@ -105,7 +108,8 @@ func getLogWriter(path string) io.Writer {
 		return os.Stdout
 	}
 
-	file, err := os.OpenFile(getLogFile(path), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	logfile, _ := getLogFile(path)
+	file, err := os.OpenFile(logfile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		panic(err)
 	}
