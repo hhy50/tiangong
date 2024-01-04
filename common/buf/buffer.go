@@ -6,6 +6,7 @@ const (
 	BlockLen = 4096
 )
 
+// 4k bytes memory block
 type block [BlockLen]byte
 
 type Buffer interface {
@@ -20,4 +21,8 @@ func NewRingBuffer() Buffer {
 		len:    BlockLen,
 		buffer: &block{},
 	}
+}
+
+func NewBuffer(len int) Buffer {
+	return nil
 }
