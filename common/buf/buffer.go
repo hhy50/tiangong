@@ -23,6 +23,6 @@ func NewRingBuffer() Buffer {
 	}
 }
 
-func NewBuffer(len int) Buffer {
+func Wrap(bytes []byte) Buffer {
 	return nil
 }

@@ -5,6 +5,20 @@ import (
 	"reflect"
 )
 
+const (
+	Zero int = iota
+	One
+	Two
+	Three
+	Four
+	Five
+	Six
+	Seven
+	Eight
+	Nine
+	Ten
+)
+
 var (
 	DateFormat = "2006-01-02 15:04:05"
 	LogFilName = "tiangong.log"

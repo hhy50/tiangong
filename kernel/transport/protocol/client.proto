@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package protocol;
+option go_package = "./kernel/transport/protocol;protocol";
+
+message ClientAuth {
+  string name = 1;
+  uint32 internal = 2;
+  uint32 flag = 3;
+  string key = 4;
+}

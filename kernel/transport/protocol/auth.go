@@ -1,41 +1,55 @@
 package protocol
 
 import (
-	"bytes"
-	"strconv"
+	"fmt"
+	"google.golang.org/protobuf/proto"
+	"io"
 	"tiangong/common/buf"
 	"tiangong/common/errors"
-	"tiangong/common/net"
 )
 
-type Flag = byte
+type AuthType = byte
 
 const (
-	Hide         = 0x0001
-	MAX_NAME_LEN = 32
+	authHeaderLen = 16
 )
 
-type Auth struct {
-	NameLen  byte          // Name Actual length
-	Name     string        // ClientName
-	Internal net.IpAddress // Client Custom InternalIp
-	Flag     Flag          // Flag, 0: Hide,
+type AuthHeader struct {
+	Version  byte     // Client kernel version
+	Type     AuthType // AuthType
+	Reserved [13]byte // Reserved
+	Len      byte     // DataLength
 }
 
-func (a *Auth) Encode() (buf.Buffer, error) {
-	name := bytes.NewBufferString(a.Name)
-	namelen := name.Len()
-	if namelen > MAX_NAME_LEN {
-		return nil, errors.NewError("Name exceeds the maximum length limit, maximum length: "+strconv.Itoa(MAX_NAME_LEN), nil)
+func DecodeAuthHeader(reader io.Reader) (*AuthHeader, error) {
+	bytes := [authHeaderLen]byte{}
+	if n, err := reader.Read(bytes[:]); err != nil || n != authHeaderLen {
+		return nil, errors.NewError(fmt.Sprintf("Auth fial, expect read %d bytes, actuality read %d bytes", authHeaderLen, n), err)
 	}
-	buffer := buf.NewBuffer(1 + namelen + 1 + 1)
-	_ = buf.WriteByte(buffer, byte(namelen))
-	_, _ = buf.WriteBytes(buffer, name)
-	_, _ = buf.WriteBytes(buffer, bytes.NewBuffer(a.Internal[:]))
-	_ = buf.WriteByte(buffer, a.Flag)
-	return buffer, nil
+	buffer := buf.Wrap(bytes[:])
+	defer buffer.Release()
+
+	header := AuthHeader{}
+	header.Version, _ = buf.ReadByte(buffer)
+	header.Type, _ = buf.ReadByte(buffer)
+	{
+		// Skip Reserved
+		for i := range header.Reserved {
+			header.Reserved[i], _ = buf.ReadByte(buffer)
+		}
+	}
+	header.Len, _ = buf.ReadByte(buffer)
+	return &header, nil
 }
 
-func (a *Auth) Decode(bytes []byte) error {
-	return nil
+func DecodeClientAuthBody(reader io.Reader, bl byte) (*ClientAuth, error) {
+	bytes := make([]byte, bl)
+	if n, err := reader.Read(bytes); err != nil || n != int(bl) {
+		return nil, err
+	}
+	auth := ClientAuth{}
+	if err := proto.Unmarshal(bytes, &auth); err != nil {
+		return nil, err
+	}
+	return &auth, nil
 }
