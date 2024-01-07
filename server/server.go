@@ -1,6 +1,7 @@
 package server
 
 import (
+	"tiangong/common"
 	"tiangong/common/errors"
 	"tiangong/common/lock"
 	"tiangong/common/log"
@@ -10,7 +11,8 @@ import (
 	"tiangong/server/conf"
 )
 
-type ServerStatus int8
+type Status int8
+type Runnable = common.Runnable
 
 type Server interface {
 	Start() error
@@ -20,19 +22,20 @@ type Server interface {
 type tgServer struct {
 	Admin   admin.AdminServer
 	Clients map[string]*client.Client
-	Status  ServerStatus
+	Status  Status
 	Lock    lock.Lock
 
 	TcpSrv net.TcpServer
 }
 
 const (
-	INIT ServerStatus = iota
+	INIT Status = iota
 	RUNNING
 	STOPED
 )
 
 var (
+	Key         string
 	connHandler = client.ConnHandler
 )
 

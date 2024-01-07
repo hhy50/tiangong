@@ -2,37 +2,42 @@ package client
 
 import (
 	"net"
-	"tiangong/client"
+	tgNet "tiangong/common/net"
+	"tiangong/kernel/transport/protocol"
 	"tiangong/server/auth"
-	"tiangong/server/session"
 )
 
 type Client struct {
 	Name string
+	Host tgNet.IpAddress
+
+	header *protocol.AuthHeader
+	conn   net.Conn
 }
 
-type Auth struct {
-}
-
-func NewClient(name string, conn net.Conn) Client {
-
-	return Client{}
+func NewClient(name string, host tgNet.IpAddress, header *protocol.AuthHeader, conn net.Conn) Client {
+	return Client{
+		Name:   name,
+		Host:   host,
+		header: header,
+		conn:   conn,
+	}
 }
 
 func ConnHandler(conn net.Conn) {
-	close := func(conn net.Conn) {
+	close := func() {
 		_ = conn.Close()
 	}
 
 	user, err := auth.Authentication(conn)
 	if err != nil {
-		close(conn)
+		close()
 	}
 
 	switch user.(type) {
-	case client.Client:
-		break
-	case session.Session:
-		break
+	//case client.Client:
+	//	break
+	//case session.Session:
+	//	break
 	}
 }

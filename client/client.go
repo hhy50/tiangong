@@ -3,12 +3,14 @@ package client
 import (
 	"fmt"
 	"net"
+	"tiangong/common/buf"
 )
 
 type Client struct {
-	host string
-	port int
-	conn net.Conn
+	host   string
+	port   int
+	conn   net.Conn
+	buffer buf.Buffer
 }
 
 func (s *Client) connect() {

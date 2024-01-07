@@ -42,7 +42,7 @@ func DecodeAuthHeader(reader io.Reader) (*AuthHeader, error) {
 	return &header, nil
 }
 
-func DecodeClientAuthBody(reader io.Reader, bl byte) (*ClientAuth, error) {
+func DecodeClientAuthBody(reader io.Reader, bl byte) (proto.Message, error) {
 	bytes := make([]byte, bl)
 	if n, err := reader.Read(bytes); err != nil || n != int(bl) {
 		return nil, err
