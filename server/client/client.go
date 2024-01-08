@@ -1,10 +1,15 @@
 package client
 
 import (
+	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
 	"net"
+	"tiangong/client"
+	"tiangong/common"
 	tgNet "tiangong/common/net"
 	"tiangong/kernel/transport/protocol"
 	"tiangong/server/auth"
+	"tiangong/server/internal"
 )
 
 type Client struct {
@@ -34,10 +39,33 @@ func ConnHandler(conn net.Conn) {
 		close()
 	}
 
+	c := buildClient(conn, user)
+	_ = client.AddClient(&c)
+
 	switch user.(type) {
 	//case client.Client:
 	//	break
 	//case session.Session:
 	//	break
 	}
+}
+
+func buildClient(conn net.Conn, user *proto.Message) client.Client {
+	getInternalIpFromReq := func() tgNet.IpAddress {
+		if len(auth.Internal) == 4 {
+			return auth.Internal[0:4]
+		}
+		return nil
+	}
+
+	internalIp := getInternalIpFromReq()
+	if internalIp != nil {
+		internalIp = internal.GeneraInternalIp()
+	}
+	clientName := auth.Name
+	if common.IsEmpty(clientName) {
+		uid, _ := uuid.NewUUID()
+		clientName = uid.String()
+	}
+	return client.NewClient(clientName, internalIp, conn)
 }
