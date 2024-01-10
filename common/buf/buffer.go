@@ -11,9 +11,10 @@ type block [BlockLen]byte
 
 type Buffer interface {
 	Read([]byte) (int, error)
-	Write(reader io.Reader) (int, error)
+	Write(reader io.Reader, len int) (int, error)
 	Len() int
-	Release() error
+	Release()
+	Clear() error
 }
 
 func NewRingBuffer() Buffer {
@@ -24,5 +25,6 @@ func NewRingBuffer() Buffer {
 }
 
 func Wrap(bytes []byte) Buffer {
+	// TODO
 	return nil
 }

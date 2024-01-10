@@ -100,6 +100,7 @@ func format(message string, level Level) string {
 }
 
 func formatStackTrace(message string) string {
+	// TODO
 	return format(message, Level_Error)
 }
 

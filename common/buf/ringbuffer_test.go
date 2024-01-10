@@ -1,7 +1,6 @@
 package buf_test
 
 import (
-	"bytes"
 	"testing"
 	"tiangong/common/buf"
 )
@@ -12,11 +11,11 @@ func TestRingBuffer(t *testing.T) {
 
 	// 写入4k
 	for i := 0; i < 4096; i += step {
-		b := bytes.Buffer{}
+		b := buf.Wrap(make([]byte, step))
 		for j := 0; j < step; j++ {
-			b.WriteByte(byte(j % 256))
+			_ = buf.WriteByte(b, byte(j%255))
 		}
-		n, _ := ringbuffer.Write(&b)
+		n, _ := ringbuffer.Write(b, step)
 		if n != step {
 			t.Error("Write error")
 			return
@@ -34,7 +33,7 @@ func TestRingBuffer(t *testing.T) {
 	}
 
 	// 写入 1k
-	if write, _ := ringbuffer.Write(bytes.NewBuffer(buff)); write != 1024 {
+	if write, _ := ringbuffer.Write(buf.Wrap(buff), len(buff)); write != 1024 {
 		t.Error("Write error")
 		return
 	}

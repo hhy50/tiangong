@@ -2,6 +2,7 @@ package session
 
 import (
 	"google.golang.org/protobuf/proto"
+	"tiangong/common"
 	"tiangong/common/buf"
 	"tiangong/common/log"
 	"tiangong/common/net"
@@ -36,9 +37,14 @@ func (s *Session) Work() {
 		if err := proto.Unmarshal(header, &packetHeader); err != nil {
 			s.Close()
 		}
-		if n, err := s.buffer.Write(s.conn); err != nil && n > 0 {
-
+		packetLen := common.Uint16(packetHeader.Len[0], packetHeader.Len[1])
+		if n, err := s.buffer.Write(s.conn, int(packetLen)); err != nil || n != int(packetLen) {
+			// discard
+			_ = s.buffer.Clear()
+			continue
 		}
+
+		// TODO
 	}
 }
 

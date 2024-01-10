@@ -1,20 +1,17 @@
 package buf
 
 import (
-	"io"
 	"tiangong/common"
 )
 
 func WriteByte(buffer Buffer, data byte) error {
+	// TODO
 	return nil
 }
 
 func WriteInt(buffer Buffer, data int) error {
+	// TODO
 	return nil
-}
-
-func WriteBytes(buffer Buffer, reader io.Reader) (int, error) {
-	return buffer.Write(reader)
 }
 
 func ReadByte(buffer Buffer) (byte, error) {
@@ -26,5 +23,6 @@ func ReadByte(buffer Buffer) (byte, error) {
 }
 
 func ReadInt(buffer Buffer) (int, error) {
+	// TODO
 	return 0, nil
 }

@@ -14,9 +14,16 @@ type RingBuffer struct {
 	offset_r int
 }
 
-func (b *RingBuffer) Release() error {
-	//TODO implement me
-	panic("implement me")
+func (b *RingBuffer) Clear() error {
+	b.offset_w, b.offset_r = 0, 0
+	b.len = 0
+	return nil
+}
+
+func (b *RingBuffer) Release() {
+	b.Clear()
+	b.buffer = nil
+	b = nil
 }
 
 // Read reads data from the channel into the specified buffer.
@@ -44,7 +51,7 @@ func (b *RingBuffer) Read(buf []byte) (int, error) {
 }
 
 // Write writes data from the specified buffer into the channel.
-func (b *RingBuffer) Write(reader io.Reader) (int, error) {
+func (b *RingBuffer) Write(reader io.Reader, len int) (int, error) {
 	r := b.offset_r & (b.len - 1)
 	w := b.offset_w & (b.len - 1)
 
@@ -60,6 +67,10 @@ func (b *RingBuffer) Write(reader io.Reader) (int, error) {
 		}
 		return w, b.len - w + r
 	}()
+
+	if l < len {
+		return 0, io.EOF
+	}
 
 	tmp := make([]byte, l)
 	n, err := reader.Read(tmp)
@@ -83,7 +94,4 @@ func (b *RingBuffer) Write(reader io.Reader) (int, error) {
 
 func (b *RingBuffer) Len() int {
 	return b.offset_w - b.offset_r
-}
-func Release() error {
-	return nil
 }

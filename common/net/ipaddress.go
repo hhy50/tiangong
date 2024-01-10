@@ -4,8 +4,14 @@ package net
 type IpAddress []byte
 
 var (
-	Internal IpAddress = []byte{0x00, 0x00, 0x00, 0x00}
+	Internal IpAddress
+	Local    IpAddress = []byte{127, 0, 0, 1}
 )
+
+func init() {
+	// TODO
+	// Get Internal ip From
+}
 
 // Port Range 1024~65535
 type Port uint16
