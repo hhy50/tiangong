@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package protocol;
+option go_package = "./kernel/transport/protocol;protocol";
+
+message PacketHeader {
+  bytes len = 1;
+  uint32 rid = 2;
+  bytes protocol = 3;
+}

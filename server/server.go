@@ -35,8 +35,7 @@ const (
 )
 
 var (
-	Key         string
-	connHandler = client.ConnHandler
+	Key string
 )
 
 func (s *tgServer) Start() error {

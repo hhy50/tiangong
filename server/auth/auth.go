@@ -3,6 +3,7 @@ package auth
 import (
 	"google.golang.org/protobuf/proto"
 	"net"
+	"tiangong/common"
 	"tiangong/common/errors"
 	"tiangong/kernel/transport/protocol"
 	"tiangong/server"
@@ -17,10 +18,6 @@ const (
 var (
 	TimeOut = 15 * time.Second
 )
-
-type ListenFunc func()
-
-func (l ListenFunc) Run() { l() }
 
 func Authentication(conn net.Conn) (proto.Message, error) {
 	if err := conn.SetDeadline(time.Now().Add(TimeOut)); err != nil {
@@ -56,14 +53,12 @@ func Authentication(conn net.Conn) (proto.Message, error) {
 		return body, nil
 	case *protocol.SessionAuth:
 		sessionAuth := body.(*protocol.SessionAuth)
+		if common.IsEmpty(sessionAuth.MainHost) || len(sessionAuth.MainHost) != net.IPv4len {
+			return nil, errors.NewError("Connection Host not be null", nil)
+		}
 		if err = Verification(sessionAuth.Token); err != nil {
 			return nil, errors.NewError("Auth fail", err)
 		}
-		buildSession(conn, header, sessionAuth)
 	}
 	return nil, nil
-}
-
-func buildSession(net.Conn, *protocol.AuthHeader, *protocol.SessionAuth) {
-
 }

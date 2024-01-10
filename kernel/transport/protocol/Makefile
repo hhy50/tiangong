@@ -1,0 +1,1 @@
+# protoc --go_out=. kernel/transport/protocol/*.proto

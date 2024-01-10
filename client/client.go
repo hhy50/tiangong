@@ -2,8 +2,8 @@ package client
 
 import (
 	"fmt"
-	"net"
 	"tiangong/common/buf"
+	"tiangong/common/net"
 )
 
 type Client struct {
