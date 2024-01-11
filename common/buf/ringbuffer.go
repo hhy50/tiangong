@@ -51,7 +51,7 @@ func (b *RingBuffer) Read(buf []byte) (int, error) {
 }
 
 // Write writes data from the specified buffer into the channel.
-func (b *RingBuffer) Write(reader io.Reader, len int) (int, error) {
+func (b *RingBuffer) Write(reader io.Reader, size int) (int, error) {
 	r := b.offset_r & (b.len - 1)
 	w := b.offset_w & (b.len - 1)
 
@@ -68,25 +68,24 @@ func (b *RingBuffer) Write(reader io.Reader, len int) (int, error) {
 		return w, b.len - w + r
 	}()
 
-	if l < len {
-		return 0, io.EOF
+	if l < size {
+		return 0, NoSpace
 	}
 
-	tmp := make([]byte, l)
+	tmp := make([]byte, size)
 	n, err := reader.Read(tmp)
 	if err != nil {
 		return n, err
 	}
 
 	off := 0
+	limit := n
 	for off < n {
-		limit := common.Min(n, l)
-		if end := offset + l; end > b.len {
-			limit -= (end - b.len)
+		if end := offset + limit; end > b.len {
+			limit = b.len - offset
 		}
 		copy(b.buffer[offset:offset+limit], tmp[off:off+limit])
 		off += limit
-		l -= limit
 	}
 	b.offset_w += n
 	return n, nil

@@ -1,11 +1,20 @@
 package net
 
-// A four byte IP address
-type IpAddress []byte
+import (
+	"fmt"
+	"net"
+	"strconv"
+)
+
+// IpAddress A four byte IP address
+type IpAddress [net.IPv4len]byte
+
+// ConnHandlerFunc connect success exec
+type ConnHandlerFunc func(net.Conn)
 
 var (
 	Internal IpAddress
-	Local    IpAddress = []byte{127, 0, 0, 1}
+	Local    = IpAddress{127, 0, 0, 1}
 )
 
 func init() {
@@ -30,4 +39,18 @@ func (p IpAddress) GetC() byte {
 
 func (p IpAddress) GetD() byte {
 	return p[3]
+}
+
+func (p IpAddress) String() string {
+	return fmt.Sprintf("%d.%d.%d.%d", p.GetA(), p.GetB(), p.GetC(), p.GetD())
+}
+
+func (p Port) String() string {
+	return strconv.Itoa(int(p))
+}
+
+func ConvertIp(bytes []byte) IpAddress {
+	ip := IpAddress{}
+	copy(ip[:], bytes)
+	return ip
 }

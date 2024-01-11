@@ -12,9 +12,8 @@ func AddSession(session *Session) error {
 	return nil
 }
 
-func NewSession(mainHost, subHost net.IpAddress, token string, conn net.Conn) Session {
+func NewSession(subHost net.IpAddress, token string, conn net.Conn) Session {
 	return Session{
-		Host:    mainHost,
 		SubHost: subHost,
 		Token:   token,
 

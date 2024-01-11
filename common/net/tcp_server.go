@@ -18,7 +18,7 @@ type TcpServer struct {
 	cancel func()
 }
 
-func (s *TcpServer) Listen(handler ConnHandler) error {
+func (s *TcpServer) Listen(handler ConnHandlerFunc) error {
 	ctx, cancel := context.WithCancel(common.EmptyCtx)
 	s.ctx, s.cancel = common.Wrap(ctx), cancel
 
@@ -41,7 +41,7 @@ func (s *TcpServer) Stop() {
 	}
 }
 
-func listenConnect(listener net.Listener, connHandler ConnHandler, ctx context.Context) {
+func listenConnect(listener net.Listener, connHandler ConnHandlerFunc, ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():

@@ -1,15 +1,22 @@
 package buf
 
 import (
+	"bytes"
 	"tiangong/common"
 )
 
-func WriteByte(buffer Buffer, data byte) error {
-	// TODO
+func WriteByte(buffer Buffer, b byte) error {
+	return WriteBytes(buffer, []byte{b})
+}
+
+func WriteBytes(buffer Buffer, b []byte) error {
+	if _, err := buffer.Write(bytes.NewBuffer(b), len(b)); err != nil {
+		return err
+	}
 	return nil
 }
 
-func WriteInt(buffer Buffer, data int) error {
+func WriteInt(buffer Buffer, i int) error {
 	// TODO
 	return nil
 }

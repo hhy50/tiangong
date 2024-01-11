@@ -1,8 +1,8 @@
 package client
 
 import (
-	"net"
 	"tiangong/common/errors"
+	"tiangong/common/net"
 	"tiangong/server"
 )
 
@@ -19,10 +19,10 @@ func AddClient(c *Client) error {
 	return nil
 }
 
-func NewClient(cli server.Cli, conn net.Conn) Client {
+func NewClient(internalIP net.IpAddress, cli server.Cli, conn net.Conn) Client {
 	return Client{
 		Name: cli.Name,
-		Host: cli.Internal,
+		Host: internalIP,
 		cli:  cli,
 		conn: conn,
 	}

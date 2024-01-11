@@ -3,7 +3,6 @@ package auth
 import (
 	"google.golang.org/protobuf/proto"
 	"net"
-	"tiangong/common"
 	"tiangong/common/errors"
 	"tiangong/kernel/transport/protocol"
 	"tiangong/server"
@@ -53,9 +52,6 @@ func Authentication(conn net.Conn) (proto.Message, error) {
 		return body, nil
 	case *protocol.SessionAuth:
 		sessionAuth := body.(*protocol.SessionAuth)
-		if common.IsEmpty(sessionAuth.MainHost) || len(sessionAuth.MainHost) != net.IPv4len {
-			return nil, errors.NewError("Connection Host not be null", nil)
-		}
 		if err = Verification(sessionAuth.Token); err != nil {
 			return nil, errors.NewError("Auth fail", err)
 		}

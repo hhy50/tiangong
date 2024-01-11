@@ -4,7 +4,6 @@ import (
 	"github.com/google/uuid"
 	"tiangong/common"
 	"tiangong/common/net"
-	tgNet "tiangong/common/net"
 	"tiangong/kernel/transport/protocol"
 	"tiangong/server/auth"
 	"tiangong/server/client"
@@ -51,27 +50,22 @@ func connHandler(conn net.Conn) {
 }
 
 func buildSession(conn net.Conn, ses Session) session.Session {
-	if len(ses.SubHost) == 0 {
-		ses.SubHost = ses.MainHost
-	}
-	return session.NewSession(ses.MainHost, ses.SubHost, ses.Token, conn)
+	return session.NewSession(net.ConvertIp(ses.SubHost), ses.Token, conn)
 }
 
 func buildClient(conn net.Conn, cli Cli) client.Client {
-	getInternalIpFromReq := func() tgNet.IpAddress {
+	getInternalIpFromReq := func() net.IpAddress {
 		if len(cli.Internal) == 4 {
-			return cli.Internal[0:4]
+			i := cli.Internal
+			return net.IpAddress{i[0], i[1], i[2], i[3]}
 		}
-		return nil
+		return internal.GeneraInternalIp()
 	}
 
-	internalIp := getInternalIpFromReq()
-	if internalIp != nil {
-		cli.Internal = internal.GeneraInternalIp()
-	}
+	internalIP := getInternalIpFromReq()
 	if common.IsEmpty(cli.Name) {
 		uid, _ := uuid.NewUUID()
 		cli.Name = uid.String()
 	}
-	return client.NewClient(cli, conn)
+	return client.NewClient(internalIP, cli, conn)
 }

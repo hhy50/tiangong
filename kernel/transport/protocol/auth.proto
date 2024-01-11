@@ -12,6 +12,5 @@ message ClientAuth {
 
 message SessionAuth {
   string token = 1;
-  bytes mainHost = 2;
-  bytes subHost = 3;
+  bytes subHost = 2;
 }

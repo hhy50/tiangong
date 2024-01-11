@@ -10,10 +10,11 @@ func TestRingBuffer(t *testing.T) {
 	step := 256
 
 	// 写入4k
+	b := buf.WrapNew(make([]byte, step))
 	for i := 0; i < 4096; i += step {
-		b := buf.Wrap(make([]byte, step))
+		_ = b.Clear()
 		for j := 0; j < step; j++ {
-			_ = buf.WriteByte(b, byte(j%255))
+			_ = buf.WriteByte(b, byte(j%256))
 		}
 		n, _ := ringbuffer.Write(b, step)
 		if n != step {

@@ -10,9 +10,8 @@ import (
 )
 
 type Session struct {
-	Host    net.IpAddress
-	SubHost net.IpAddress
 	Token   string
+	SubHost net.IpAddress
 
 	buffer buf.Buffer
 	conn   net.Conn
@@ -49,6 +48,6 @@ func (s *Session) Work() {
 }
 
 func (s *Session) Close() {
-	_ = s.buffer.Release()
+	s.buffer.Release()
 	_ = s.conn.Close()
 }
