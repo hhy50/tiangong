@@ -18,14 +18,15 @@ type ListenFunc func()
 
 func (l ListenFunc) Run() { l() }
 
-func connHandler(conn net.Conn) {
-	close := func() {
-		_ = conn.Close()
-	}
+func CloseConn(conn net.Conn) {
+	_ = conn.Close()
+}
 
+func connHandler(conn net.Conn) {
 	user, err := auth.Authentication(conn)
 	if err != nil {
-		close()
+		CloseConn(conn)
+		return
 	}
 
 	var runner common.Runnable
