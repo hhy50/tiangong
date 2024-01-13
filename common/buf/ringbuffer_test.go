@@ -10,7 +10,8 @@ func TestRingBuffer(t *testing.T) {
 	step := 256
 
 	// 写入4k
-	b := buf.WrapNew(make([]byte, step))
+	b := buf.NewBuffer(step)
+	defer b.Clear()
 	for i := 0; i < 4096; i += step {
 		_ = b.Clear()
 		for j := 0; j < step; j++ {

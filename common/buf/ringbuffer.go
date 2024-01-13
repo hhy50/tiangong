@@ -94,3 +94,18 @@ func (b *RingBuffer) Write(reader io.Reader, size int) (int, error) {
 func (b *RingBuffer) Len() int {
 	return b.offset_w - b.offset_r
 }
+
+func (b *RingBuffer) Cap() int {
+	if b.offset_r == b.offset_w {
+		return b.len
+	}
+	if (b.offset_w-b.offset_r)&(b.len-1) == 0 {
+		return 0
+	}
+	r := b.offset_r & (b.len - 1)
+	w := b.offset_w & (b.len - 1)
+	if r > w {
+		return r - w
+	}
+	return b.len - w + r
+}

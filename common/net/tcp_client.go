@@ -21,5 +21,5 @@ func (t *TcpClient) Conn(handlerFunc ConnHandlerFunc) error {
 	if err != nil {
 		return err
 	}
-	return handlerFunc(conn)
+	return handlerFunc(Conn{conn})
 }

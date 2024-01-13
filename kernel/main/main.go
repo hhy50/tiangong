@@ -30,7 +30,7 @@ func main() {
 		log.Error("start fail, ", err)
 		return
 	}
-	log.Info("kernel client success")
+	log.Info("Kernel client start success")
 	pauseProcess()
 }
 

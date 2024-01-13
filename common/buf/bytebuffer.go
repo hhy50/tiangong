@@ -40,6 +40,10 @@ func (b *ByteBuffer) Len() int {
 	return b.end - b.start
 }
 
+func (b *ByteBuffer) Cap() int {
+	return b.len - b.end
+}
+
 func (b *ByteBuffer) Release() {
 	_ = b.Clear()
 	b.bytes = nil

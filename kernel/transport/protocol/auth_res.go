@@ -3,6 +3,7 @@ package protocol
 import (
 	"strconv"
 	"tiangong/common"
+	"tiangong/common/buf"
 	"tiangong/common/errors"
 	"time"
 )
@@ -11,25 +12,33 @@ import (
 type AuthResponse struct {
 	Status    AuthStatus
 	Reserved  [7]byte
-	Timestamp int64
+	Timestamp uint64
 }
 
-func (r *AuthResponse) Marshal() ([]byte, error) {
-	bytes := make([]byte, AuthResponseLen)
-	bytes[0] = r.Status
-	copy(bytes[1:8], r.Reserved[:])
-	copy(bytes[8:], common.Uint64ToBytes(uint64(r.Timestamp)))
-	return bytes, nil
+func (r *AuthResponse) WriteTo(buffer buf.Buffer) error {
+	if buffer.Cap() < AuthResponseLen {
+		return errors.NewError("write bytes len too short, minnum is "+strconv.Itoa(AuthResponseLen)+"bytes", nil)
+	}
+	if err := buf.WriteByte(buffer, r.Status); err != nil {
+		return err
+	}
+	if err := buf.WriteBytes(buffer, r.Reserved[:]); err != nil {
+		return err
+	}
+	if err := buf.WriteBytes(buffer, common.Uint64ToBytes(r.Timestamp)); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (r *AuthResponse) Unmarshal(bytes []byte) error {
-	if len(bytes) < AuthResponseLen {
-		return errors.NewError("bytes len too short, minnum is "+strconv.Itoa(AuthResponseLen)+"bytes", nil)
+func (r *AuthResponse) ReadFrom(buffer buf.Buffer) error {
+	if buffer.Len() < AuthResponseLen {
+		return errors.NewError("read bytes len too short, minnum is "+strconv.Itoa(AuthResponseLen)+"bytes", nil)
 	}
 
-	r.Status = bytes[0]
-	r.Reserved = [7]byte{}
-	r.Timestamp = int64(common.Uint64(bytes[8:]))
+	r.Status, _ = buf.ReadByte(buffer)
+	buffer.Read(r.Reserved[:]) // Skip Reserved
+	r.Timestamp, _ = buf.ReadUint64(buffer)
 	return nil
 }
 
@@ -37,6 +46,6 @@ func NewAuthResponse(status AuthStatus) *AuthResponse {
 	return &AuthResponse{
 		Status:    status,
 		Reserved:  [7]byte{},
-		Timestamp: time.Now().UnixMilli(),
+		Timestamp: uint64(time.Now().UnixMilli()),
 	}
 }

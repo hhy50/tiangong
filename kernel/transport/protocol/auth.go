@@ -48,37 +48,48 @@ func (h *AuthHeader) AppendBody(m proto.Message) *AuthHeader {
 	return h
 }
 
-func (h *AuthHeader) ToBytes() ([]byte, error) {
+func (h *AuthHeader) WriteTo(buffer buf.Buffer) error {
 	if h.body == nil {
-		return nil, errors.NewError("Auth body is null", nil)
+		return errors.NewError("Auth body is null", nil)
 	}
-	body, err := proto.Marshal(h.body)
-	if err != nil {
-		return nil, err
-	}
-	if h.Len = byte(len(body)); int(h.Len) != len(body) {
-		return nil, errors.NewError(fmt.Sprintf("AuthBody Len too long, max limit: %d", math.MaxUint8), nil)
+	var body []byte
+	{
+		b, err := proto.Marshal(h.body)
+		if err != nil {
+			return err
+		}
+		if h.Len = byte(len(b)); int(h.Len) != len(b) {
+			return errors.NewError(fmt.Sprintf("AuthBody Len too long, max limit: %d", math.MaxUint8), nil)
+		}
+		body = b
 	}
 
-	// Encode
-	bytes := make([]byte, AuthHeaderLen+int(h.Len))
-	bytes[0] = h.Version
-	bytes[1] = h.Type
-	copy(bytes[2:15], h.Reserved[:])
-	bytes[15] = h.Len
-	copy(bytes[16:], body)
-	return bytes, nil
+	if err := buf.WriteByte(buffer, h.Version); err != nil {
+		return err
+	}
+	if err := buf.WriteByte(buffer, h.Type); err != nil {
+		return err
+	}
+	if err := buf.WriteBytes(buffer, h.Reserved[:]); err != nil {
+		return err
+	}
+	if err := buf.WriteByte(buffer, h.Len); err != nil {
+		return err
+	}
+	if err := buf.WriteBytes(buffer, body); err != nil {
+		return err
+	}
+	return nil
 }
 
-func DecodeAuthHeader(reader io.Reader) (*AuthHeader, error) {
+func DecodeAuthHeader(reader io.Reader, header *AuthHeader) error {
 	bytes := [AuthHeaderLen]byte{}
 	if n, err := reader.Read(bytes[:]); err != nil || n != AuthHeaderLen {
-		return nil, errors.NewError(fmt.Sprintf("Auth fial, expect read %d bytes, actuality read %d bytes", AuthHeaderLen, n), err)
+		return errors.NewError(fmt.Sprintf("Auth fial, expect read %d bytes, actuality read %d bytes", AuthHeaderLen, n), err)
 	}
 	buffer := buf.Wrap(bytes[:])
 	defer buffer.Release()
 
-	header := AuthHeader{}
 	header.Version, _ = buf.ReadByte(buffer)
 	header.Type, _ = buf.ReadByte(buffer)
 	{
@@ -88,5 +99,5 @@ func DecodeAuthHeader(reader io.Reader) (*AuthHeader, error) {
 		}
 	}
 	header.Len, _ = buf.ReadByte(buffer)
-	return &header, nil
+	return nil
 }

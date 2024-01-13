@@ -2,9 +2,11 @@ package auth
 
 import (
 	"google.golang.org/protobuf/proto"
-	"net"
+	"tiangong/common/buf"
 	"tiangong/common/errors"
 	"tiangong/common/log"
+	"tiangong/common/net"
+	"tiangong/kernel/transport"
 	"tiangong/kernel/transport/protocol"
 	"time"
 )
@@ -15,23 +17,25 @@ var (
 )
 
 func Authentication(conn net.Conn) (proto.Message, error) {
-	var err error
-	if err = conn.SetDeadline(time.Now().Add(TimeOut)); err != nil {
+	buffer := buf.NewBuffer(256)
+	defer buffer.Release()
+
+	if err := conn.SetDeadline(time.Now().Add(TimeOut)); err != nil {
 		return nil, errors.NewError("Auth fail, SetDeadline error", err)
 	}
 	complete := func(status protocol.AuthStatus) {
 		response := protocol.NewAuthResponse(status)
-		var res []byte
-		if res, err = response.Marshal(); err != nil {
+		if err := response.WriteTo(buffer); err != nil {
 			_ = conn.Close()
 		}
-		if _, err = conn.Write(res); err != nil {
+
+		if err := conn.ReadFrom(buffer); err != nil {
 			_ = conn.Close()
 		}
 	}
 
-	var header *protocol.AuthHeader
-	if header, err = protocol.DecodeAuthHeader(conn); err != nil {
+	var header protocol.AuthHeader
+	if err := protocol.DecodeAuthHeader(conn, &header); err != nil {
 		return nil, err
 	}
 
@@ -46,7 +50,7 @@ func Authentication(conn net.Conn) (proto.Message, error) {
 	default:
 		return nil, errors.NewError("Unsupport AuthType: ["+string(header.Type)+"]", nil)
 	}
-	if err = protocol.DecodeProtoMessage(conn, int(header.Len), body); err != nil {
+	if err := transport.DecodeProtoMessage(conn, int(header.Len), body); err != nil {
 		return nil, errors.NewError("Auth fail, DecodeAuthBody error", err)
 	}
 
@@ -62,7 +66,7 @@ func Authentication(conn net.Conn) (proto.Message, error) {
 		break
 	case *protocol.SessionAuth:
 		sessionAuth := body.(*protocol.SessionAuth)
-		if err = Verification(sessionAuth.Token); err != nil {
+		if err := Verification(sessionAuth.Token); err != nil {
 			complete(protocol.AuthFail)
 			return nil, errors.NewError("Auth fail", err)
 		}

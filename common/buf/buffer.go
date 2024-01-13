@@ -23,6 +23,8 @@ type Buffer interface {
 	Write(reader io.Reader, len int) (int, error)
 	// Len Return remaining readable length
 	Len() int
+	// Cap Return the writable length
+	Cap() int
 	// Release the Buffer
 	Release()
 	// Clear and reuse the Buffer
@@ -34,6 +36,10 @@ func NewRingBuffer() Buffer {
 		len:    _4K,
 		buffer: &block{},
 	}
+}
+
+func NewBuffer(size int) Buffer {
+	return WrapNew(make([]byte, size))
 }
 
 func WrapNew(bytes []byte) Buffer {

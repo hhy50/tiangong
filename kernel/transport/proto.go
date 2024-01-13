@@ -1,4 +1,4 @@
-package protocol
+package transport
 
 import (
 	"google.golang.org/protobuf/proto"

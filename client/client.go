@@ -18,21 +18,21 @@ func (s *Client) connect() {
 	if err != nil {
 		panic(err)
 	}
-	s.conn = conn
+	s.conn = net.Conn{Conn: conn}
 
-	go func(c net.Conn) {
-		buf := make([]byte, 1024)
-		for {
-			len, err := c.Read(buf)
-			if len == 0 {
-				return
-			}
-			if err != nil {
-				return
-			}
-			//msg := string(buf[:len-1])
-		}
-	}(s.conn)
+	//go func(c net.Conn) {
+	//	buf := make([]byte, 1024)
+	//	for {
+	//		len, err := c.Read(buf)
+	//		if len == 0 {
+	//			return
+	//		}
+	//		if err != nil {
+	//			return
+	//		}
+	//		//msg := string(buf[:len-1])
+	//	}
+	//}(s.conn)
 }
 
 func (s *Client) Write(msg []byte) {

@@ -3,7 +3,7 @@ package protocol
 import (
 	"io"
 	"strconv"
-	"tiangong/common"
+	"tiangong/common/buf"
 	"tiangong/common/errors"
 	"unsafe"
 )
@@ -18,12 +18,12 @@ type PacketHeader struct {
 	Protocol byte
 }
 
-func (h *PacketHeader) Unmarshal(header []byte) error {
-	if len(header) < PacketHeaderLen {
+func (h *PacketHeader) Unmarshal(buffer buf.Buffer) error {
+	if buffer.Len() < PacketHeaderLen {
 		return errors.NewError("header([]byte) len too short, Minimum requirement "+strconv.Itoa(PacketHeaderLen)+"bytes", io.EOF)
 	}
-	h.Len = common.Uint16(header[0:2])
-	h.Rid = common.Uint32(header[2:6])
-	h.Protocol = header[6]
+	h.Len, _ = buf.ReadUint16(buffer)
+	h.Rid, _ = buf.ReadUint32(buffer)
+	h.Protocol, _ = buf.ReadByte(buffer)
 	return nil
 }

@@ -11,7 +11,7 @@ import (
 type IpAddress [net.IPv4len]byte
 
 // ConnHandlerFunc connect success exec
-type ConnHandlerFunc func(net.Conn) error
+type ConnHandlerFunc func(Conn) error
 
 var (
 	Internal IpAddress

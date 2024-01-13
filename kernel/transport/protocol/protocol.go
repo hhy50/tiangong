@@ -1,19 +1,23 @@
 package protocol
 
-import "tiangong/common/buf"
+type Protocol byte
 
 const (
-	TCP int = iota
+	Unknown Protocol = iota
+	TCP
 	UDP
 	ICMP
 )
 
-type Segment []byte
-
-type InBound interface {
-	Decode([]byte) error
-}
-
-type OutBound interface {
-	Encode() (buf.Buffer, error)
+func (p Protocol) String() string {
+	switch p {
+	case TCP:
+		return "TCP"
+	case UDP:
+		return "UDP"
+	case ICMP:
+		return "ICMP"
+	default:
+		return "Unknown"
+	}
 }

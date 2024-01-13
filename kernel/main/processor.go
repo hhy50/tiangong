@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"tiangong/common/buf"
 	"tiangong/common/errors"
 	"tiangong/common/log"
 	"tiangong/common/net"
@@ -66,8 +67,10 @@ func NewProcessor(host string, port int, token, sub string) Processor {
 
 func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
 	timeout := time.Now().Add(HandshakeTimeout)
+	buffer := buf.NewBuffer(256)
 	ctx, cancel := context.WithTimeout(context.Background(), HandshakeTimeout)
 	defer cancel()
+	defer buffer.Release()
 
 	{
 		authBody := protocol.SessionAuth{
@@ -76,17 +79,17 @@ func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
 		}
 		header := protocol.NewAuthHeader(kernel.VersionByte(), protocol.AuthSession)
 		header.AppendBody(&authBody)
-		bytes, err := header.ToBytes()
-		if err != nil {
+		if err := header.WriteTo(buffer); err != nil {
 			return err
 		}
-
-		if err = conn.SetWriteDeadline(timeout); err != nil {
+		if err := conn.SetWriteDeadline(timeout); err != nil {
 			return errors.NewError("SetWriteDeadline error", err)
 		}
-		if _, err = conn.Write(bytes); err != nil {
+
+		if err := conn.ReadFrom(buffer); err != nil {
 			return err
 		}
+		_ = buffer.Clear()
 	}
 	select {
 	case <-ctx.Done():
@@ -95,15 +98,13 @@ func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
 		if err := conn.SetReadDeadline(timeout); err != nil {
 			return errors.NewError("SetReadDeadline error", err)
 		}
-		bytes := make([]byte, protocol.AuthResponseLen)
-		if n, err := conn.Read(bytes); err != nil {
+		if n, err := buffer.Write(conn, protocol.AuthResponseLen); err != nil {
 			return errors.NewError("", err)
 		} else if n < protocol.AuthResponseLen {
 			return errors.NewError(fmt.Sprintf("Auth response body too short, require %d bytes, Actual return %d bytes", protocol.AuthResponseLen, n), err)
 		}
-
 		response := protocol.AuthResponse{}
-		if err := response.Unmarshal(bytes); err != nil || response.Status != protocol.AuthSuccess {
+		if err := response.ReadFrom(buffer); err != nil || response.Status != protocol.AuthSuccess {
 			return errors.NewError("handshake fail", err)
 		}
 	}
