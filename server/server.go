@@ -34,10 +34,6 @@ const (
 	STOPED
 )
 
-var (
-	Key string
-)
-
 func (s *tgServer) Start() error {
 	s.Lock.Lock()
 	defer s.Lock.Unlock()

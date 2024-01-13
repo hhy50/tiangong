@@ -13,6 +13,7 @@ import (
 	"tiangong/common/log"
 	"tiangong/kernel"
 	"tiangong/server"
+	"tiangong/server/auth"
 	"time"
 )
 
@@ -32,7 +33,7 @@ func init() {
 `
 	fmt.Printf(banner, kernel.Version(), os.Getpid(), time.Now().Format(common.DateFormat))
 	flag.StringVar(&cp, "conf", "", "Config file path")
-	flag.StringVar(&server.Key, "key", "", "Config file path")
+	flag.StringVar(&auth.Key, "key", "", "Config file path")
 }
 
 func main() {

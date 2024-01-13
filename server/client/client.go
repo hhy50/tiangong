@@ -3,13 +3,13 @@ package client
 import (
 	"net"
 	tgNet "tiangong/common/net"
-	"tiangong/server"
+	"tiangong/kernel/transport/protocol"
 )
 
 type Client struct {
 	Name string
 	Host tgNet.IpAddress
 
-	cli  server.Cli
+	cli  *protocol.ClientAuth
 	conn net.Conn
 }

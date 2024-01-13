@@ -6,7 +6,6 @@ import (
 	"tiangong/common/errors"
 	"tiangong/common/log"
 	"tiangong/kernel/transport/protocol"
-	"tiangong/server"
 	"time"
 )
 
@@ -16,6 +15,7 @@ const (
 )
 
 var (
+	Key     string
 	TimeOut = 15 * time.Second
 )
 
@@ -28,10 +28,10 @@ func Authentication(conn net.Conn) (proto.Message, error) {
 		response := protocol.NewAuthResponse(status)
 		var res []byte
 		if res, err = response.Marshal(); err != nil {
-			server.CloseConn(conn)
+			_ = conn.Close()
 		}
 		if _, err = conn.Write(res); err != nil {
-			server.CloseConn(conn)
+			_ = conn.Close()
 		}
 	}
 
@@ -58,7 +58,7 @@ func Authentication(conn net.Conn) (proto.Message, error) {
 	switch body.(type) {
 	case *protocol.ClientAuth:
 		clientAuth := body.(*protocol.ClientAuth)
-		if clientAuth.Key != server.Key {
+		if clientAuth.Key != Key {
 			complete(protocol.AuthFail)
 			return nil, errors.NewError("Auth fail, client key not match", nil)
 		}
