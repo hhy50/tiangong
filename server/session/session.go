@@ -5,6 +5,7 @@ import (
 	"tiangong/common/log"
 	"tiangong/common/net"
 	"tiangong/kernel/transport/protocol"
+	"time"
 )
 
 type Session struct {
@@ -24,11 +25,15 @@ type Session struct {
 // | 2  |  4   | 	1     |
 // +----+------+----------+
 func (s *Session) Work() {
+	defer s.Close()
+	if err := s.conn.SetDeadline(time.Time{}); err != nil {
+		return
+	}
 	for {
 		header := make([]byte, protocol.PacketHeaderLen)
 		if _, err := s.conn.Read(header); err != nil {
-			log.Error("Read error from session, reason: %+v", err)
-			continue
+			log.Error("Read error from session, ", err)
+			return
 		}
 		packetHeader := protocol.PacketHeader{}
 		if err := packetHeader.Unmarshal(header); err != nil {
@@ -48,4 +53,5 @@ func (s *Session) Work() {
 func (s *Session) Close() {
 	s.buffer.Release()
 	_ = s.conn.Close()
+	log.Warn("Session Closed, token: %s", s.Token)
 }

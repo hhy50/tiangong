@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"google.golang.org/protobuf/proto"
 	"tiangong/common/errors"
 	"tiangong/common/log"
 	"tiangong/common/net"
+	"tiangong/kernel"
 	"tiangong/kernel/transport/protocol"
 	"time"
 )
@@ -17,20 +17,19 @@ var (
 )
 
 type Processor struct {
-	ServerHost net.IpAddress
+	ServerHost string
 	ServerPort net.Port
 	Token      string
 	SubHost    net.IpAddress
-	client     net.TcpClient
+	client     *net.TcpClient
 }
 
-func (p *Processor) ConnSuccess(conn net.Conn) {
+func (p *Processor) ConnSuccess(conn net.Conn) error {
 	closeFunc := conn.Close
 	// handshake
 	if err := handshake(conn, p.Token, p.SubHost); err != nil {
-		log.Error("handshake fail %+v", err)
 		_ = closeFunc()
-		return
+		return err
 	}
 	log.Info("handshake success")
 
@@ -49,10 +48,20 @@ func (p *Processor) ConnSuccess(conn net.Conn) {
 	//		fmt.Println("收到服务端消息: ["+msg+"], 消息长度: ", len)
 	//	}
 	//}()
+	return nil
 }
 
-func NewProcessor() {
+func init() {
 
+}
+
+func NewProcessor(host string, port int, token, sub string) Processor {
+	return Processor{
+		ServerHost: host,
+		ServerPort: net.Port(port),
+		SubHost:    net.ParseIp(sub),
+		Token:      token,
+	}
 }
 
 func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
@@ -60,19 +69,24 @@ func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
 	ctx, cancel := context.WithTimeout(context.Background(), HandshakeTimeout)
 	defer cancel()
 
-	a := protocol.SessionAuth{
-		Token:   token,
-		SubHost: subHost[:],
-	}
-	bts, err := proto.Marshal(&a)
-	if err != nil {
-		return err
-	}
-	if err := conn.SetWriteDeadline(timeout); err != nil {
-		return errors.NewError("SetWriteDeadline error", err)
-	}
-	if _, err := conn.Write(bts); err != nil {
-		return err
+	{
+		authBody := protocol.SessionAuth{
+			Token:   token,
+			SubHost: subHost[:],
+		}
+		header := protocol.NewAuthHeader(kernel.VersionByte(), protocol.AuthSession)
+		header.AppendBody(&authBody)
+		bytes, err := header.ToBytes()
+		if err != nil {
+			return err
+		}
+
+		if err = conn.SetWriteDeadline(timeout); err != nil {
+			return errors.NewError("SetWriteDeadline error", err)
+		}
+		if _, err = conn.Write(bytes); err != nil {
+			return err
+		}
 	}
 	select {
 	case <-ctx.Done():
@@ -81,13 +95,15 @@ func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
 		if err := conn.SetReadDeadline(timeout); err != nil {
 			return errors.NewError("SetReadDeadline error", err)
 		}
-
 		bytes := make([]byte, protocol.AuthResponseLen)
-		if n, err := conn.Read(bytes); err != nil || n < protocol.AuthResponseLen {
+		if n, err := conn.Read(bytes); err != nil {
+			return errors.NewError("", err)
+		} else if n < protocol.AuthResponseLen {
 			return errors.NewError(fmt.Sprintf("Auth response body too short, require %d bytes, Actual return %d bytes", protocol.AuthResponseLen, n), err)
 		}
-		response, err := protocol.DecodeAuthResponse(bytes)
-		if err != nil || response.Status != protocol.AuthSuccess {
+
+		response := protocol.AuthResponse{}
+		if err := response.Unmarshal(bytes); err != nil || response.Status != protocol.AuthSuccess {
 			return errors.NewError("handshake fail", err)
 		}
 	}
@@ -96,12 +112,12 @@ func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
 }
 
 func (p *Processor) Start() error {
-	client := net.TcpClient{
+	p.client = &net.TcpClient{
 		Host:    p.ServerHost,
 		Port:    p.ServerPort,
 		Timeout: ConnTimeout,
 	}
-	if err := client.Conn(p.ConnSuccess); err != nil {
+	if err := p.client.Conn(p.ConnSuccess); err != nil {
 		return err
 	}
 	return nil

@@ -2,7 +2,7 @@ package common
 
 import "encoding/binary"
 
-// 基于小端存储法, 高位补0
+// 基于大端存储法, 高位补0
 
 func Uint16(b []byte) uint16 {
 	if len(b) == 0 {
@@ -38,4 +38,10 @@ func Uint64(b []byte) uint64 {
 	default:
 		return uint64(Uint32(b[length-4:length])) + uint64(Uint32(b[0:length-4]))<<32
 	}
+}
+
+func Uint64ToBytes(i uint64) []byte {
+	bytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(bytes, i)
+	return bytes
 }

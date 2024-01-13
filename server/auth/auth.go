@@ -9,11 +9,6 @@ import (
 	"time"
 )
 
-const (
-	Client_Auth  protocol.AuthType = 1
-	Session_Auth protocol.AuthType = 2
-)
-
 var (
 	Key     string
 	TimeOut = 15 * time.Second
@@ -42,15 +37,16 @@ func Authentication(conn net.Conn) (proto.Message, error) {
 
 	var body proto.Message = nil
 	switch header.Type {
-	case Client_Auth:
-		body, err = protocol.DecodeClientAuthBody(conn, header.Len)
+	case protocol.AuthClient:
+		body = &protocol.ClientAuth{}
 		break
-	case Session_Auth:
+	case protocol.AuthSession:
+		body = &protocol.SessionAuth{}
 		break
 	default:
 		return nil, errors.NewError("Unsupport AuthType: ["+string(header.Type)+"]", nil)
 	}
-	if err != nil || body == nil {
+	if err = protocol.DecodeProtoMessage(conn, int(header.Len), body); err != nil {
 		return nil, errors.NewError("Auth fail, DecodeAuthBody error", err)
 	}
 

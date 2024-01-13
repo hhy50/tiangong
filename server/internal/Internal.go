@@ -1,10 +1,13 @@
 package internal
 
-import "tiangong/common/net"
+import (
+	"math"
+	"tiangong/common/net"
+)
 
 var (
 	Increment = Incrementer{
-		Range: Range{0, 255},
+		Range: Range{0, math.MaxUint8},
 	}
 )
 

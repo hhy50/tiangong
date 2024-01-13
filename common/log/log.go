@@ -91,8 +91,8 @@ func Warn(message string, v ...any) {
 	logger.warn(message, v...)
 }
 
-func Error(message string, v ...any) {
-	logger.error(message, v...)
+func Error(message string, err error, v ...any) {
+	logger.error(message+" %+v", append(v, err)...)
 }
 
 func format(message string, level Level) string {

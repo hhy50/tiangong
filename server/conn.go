@@ -22,11 +22,11 @@ func CloseConn(conn net.Conn) {
 	_ = conn.Close()
 }
 
-func connHandler(conn net.Conn) {
+func connHandler(conn net.Conn) error {
 	user, err := auth.Authentication(conn)
 	if err != nil {
 		CloseConn(conn)
-		return
+		return err
 	}
 
 	var runner common.Runnable
@@ -48,6 +48,7 @@ func connHandler(conn net.Conn) {
 	}
 
 	go runner.Run()
+	return nil
 }
 
 func buildSession(conn net.Conn, ses Session) session.Session {

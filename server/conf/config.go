@@ -41,7 +41,7 @@ func LoadConfig(input string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("load config: %+v \n", prop.String())
+	log.Debug("load config:\n%+v", prop.String())
 	config := Config{
 		Host:     prop.GetString(HostDef.First, HostDef.Second),
 		SrvPort:  prop.GetInt(SrvPortDef.First, SrvPortDef.Second),

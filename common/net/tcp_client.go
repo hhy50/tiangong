@@ -8,7 +8,7 @@ import (
 )
 
 type TcpClient struct {
-	Host    IpAddress
+	Host    string
 	Port    Port
 	Timeout time.Duration
 }
@@ -17,10 +17,9 @@ func (t *TcpClient) Conn(handlerFunc ConnHandlerFunc) error {
 	if handlerFunc == nil {
 		return errors.NewError("params handlerFunc Not be nil", nil)
 	}
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", t.Host.String(), t.Port.String()))
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", t.Host, t.Port.String()))
 	if err != nil {
 		return err
 	}
-	handlerFunc(conn)
-	return nil
+	return handlerFunc(conn)
 }
