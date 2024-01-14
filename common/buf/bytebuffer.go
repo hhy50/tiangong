@@ -2,8 +2,10 @@ package buf
 
 import (
 	"io"
+	"sync"
 	"tiangong/common"
 	"tiangong/common/errors"
+	"tiangong/common/lock"
 )
 
 type ByteBuffer struct {
@@ -11,9 +13,15 @@ type ByteBuffer struct {
 	start int
 	end   int
 	len   int
+
+	lock lock.Rwlock
+	once sync.Once
 }
 
 func (b *ByteBuffer) Read(buff []byte) (int, error) {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.start < b.end {
 		l := common.Min(len(buff), b.Len())
 		copy(buff[:l], b.bytes[b.start:b.start+l])
@@ -24,6 +32,9 @@ func (b *ByteBuffer) Read(buff []byte) (int, error) {
 }
 
 func (b *ByteBuffer) Write(reader io.Reader, size int) (int, error) {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	if b.end < b.len {
 		l := b.len - b.end
 		if l < size {
@@ -50,6 +61,9 @@ func (b *ByteBuffer) Release() {
 }
 
 func (b *ByteBuffer) Clear() error {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	b.start = 0
 	b.end = 0
 	return nil

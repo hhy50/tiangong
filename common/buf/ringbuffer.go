@@ -2,7 +2,9 @@ package buf
 
 import (
 	"io"
+	"sync"
 	"tiangong/common"
+	"tiangong/common/lock"
 )
 
 // RingBuffer is an implementation of Buffer using a ring buffer.
@@ -12,22 +14,31 @@ type RingBuffer struct {
 
 	offset_w int
 	offset_r int
+	lock     lock.Rwlock
+	once     sync.Once
 }
 
 func (b *RingBuffer) Clear() error {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	b.offset_w, b.offset_r = 0, 0
 	b.len = 0
 	return nil
 }
 
 func (b *RingBuffer) Release() {
-	b.Clear()
-	b.buffer = nil
-	b = nil
+	b.once.Do(func() {
+		b.Clear()
+		b.buffer = nil
+	})
 }
 
 // Read reads data from the channel into the specified buffer.
 func (b *RingBuffer) Read(buf []byte) (int, error) {
+	b.lock.RLock()
+	defer b.lock.RUnlock()
+
 	if b.offset_r < b.offset_w {
 		l := len(buf)
 		off := 0
@@ -52,6 +63,9 @@ func (b *RingBuffer) Read(buf []byte) (int, error) {
 
 // Write writes data from the specified buffer into the channel.
 func (b *RingBuffer) Write(reader io.Reader, size int) (int, error) {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
 	r := b.offset_r & (b.len - 1)
 	w := b.offset_w & (b.len - 1)
 
