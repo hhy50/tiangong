@@ -11,6 +11,7 @@ import (
 func StartLinuxClientOfUdp(config *model.Config) {
 	//创建tun
 	myTun := tun.CreateLinuxTun(config.CIDR)
+
 	//监听本地端口，使用UDP
 	localAddr, err := net.ResolveUDPAddr("udp", config.LocalAddr)
 	if err != nil {
@@ -21,6 +22,7 @@ func StartLinuxClientOfUdp(config *model.Config) {
 		fmt.Println(err)
 	}
 	defer conn.Close()
+	defer myTun.Close()
 	//读取发送到本地端口报文并写入tun
 	go func() {
 		buf := make([]byte, 1500)
