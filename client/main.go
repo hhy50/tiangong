@@ -4,9 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"tun-demo/client"
-	"tun-demo/model"
-	"tun-demo/server"
+	"tiangong/client/client"
+	"tiangong/client/model"
+	"tiangong/client/server"
 )
 
 func main() {
