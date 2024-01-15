@@ -26,7 +26,11 @@ func StartLinuxClientOfUdp(config *model.Config) {
 		buf := make([]byte, 1500)
 		for {
 			size, _, err := conn.ReadFromUDP(buf)
-			if err != nil || size == 0 {
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			if size == 0 {
 				continue
 			}
 			packet := buf[:size]
@@ -41,16 +45,16 @@ func StartLinuxClientOfUdp(config *model.Config) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	packet := make([]byte, 1500)
+	buf := make([]byte, 1500)
 	for {
-		n, err := myTun.Read(packet)
-		if err != nil || n == 0 {
+		size, err := myTun.Read(buf)
+		if err != nil || size == 0 {
 			continue
 		}
-		data := packet[:n]
-		if !waterutil.IsIPv4(data) {
+		packet := buf[:size]
+		if !waterutil.IsIPv4(packet) {
 			continue
 		}
-		conn.WriteToUDP(data, serverAddr)
+		conn.WriteToUDP(packet, serverAddr)
 	}
 }
