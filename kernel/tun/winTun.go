@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"golang.zx2c4.com/wireguard/tun"
 	"net/netip"
-	"tiangong/client/common/winipcfg"
+	"tiangong/kernel/winipcfg"
 )
 
 func CreateWinTun(cidr string) (myTun tun.Device) {

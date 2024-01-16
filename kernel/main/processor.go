@@ -52,6 +52,10 @@ func (p *Processor) ConnSuccess(conn net.Conn) error {
 	return nil
 }
 
+func (p *Processor) startTun(buffer buf.Buffer) {
+
+}
+
 func init() {
 
 }

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/songgao/water/waterutil"
 	"net"
-	"tiangong/client/model"
-	"tiangong/client/tun"
-	netutil "tiangong/client/util"
+	"tiangong/kernel/model"
+	"tiangong/kernel/tun"
+	netutil "tiangong/kernel/util"
 	"time"
 
 	"github.com/patrickmn/go-cache"

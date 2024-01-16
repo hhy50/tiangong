@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/songgao/water/waterutil"
 	"net"
-	"tiangong/client/model"
-	"tiangong/client/tun"
+	"tiangong/kernel/model"
+	"tiangong/kernel/tun"
 )
 
 func StartLinuxClientOfUdp(config *model.Config) {
