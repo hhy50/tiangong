@@ -2,9 +2,7 @@ package main
 
 import (
 	"flag"
-	"os"
-	"os/signal"
-	"syscall"
+	"tiangong/common"
 	"tiangong/common/log"
 )
 
@@ -31,11 +29,5 @@ func main() {
 		return
 	}
 	log.Info("Kernel client start success")
-	pauseProcess()
-}
-
-func pauseProcess() {
-	osSignals := make(chan os.Signal, 1)
-	signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
-	<-osSignals
+	<-common.WaitSignal()
 }

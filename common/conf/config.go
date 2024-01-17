@@ -1,0 +1,83 @@
+package conf
+
+import (
+	"os"
+	"path/filepath"
+	"reflect"
+	"strconv"
+	"tiangong/common"
+	"tiangong/common/errors"
+	"tiangong/common/log"
+
+	"github.com/magiconair/properties"
+)
+
+var (
+	Tag = "prop"
+)
+
+var getExecPathFunc = func() string {
+	exec, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	return filepath.Dir(exec)
+}
+
+type DefaultValueFunc = func(string) string
+
+func LoadConfig(input string, config interface{}, defaultProp DefaultValueFunc) error {
+	ptr, ok := common.GetPtr(config)
+	if !ok {
+		return errors.NewError("param 'config' must be a pointer", nil)
+	}
+	if common.IsEmpty(input) {
+		return errors.NewError("useage: -conf {path} to specify the configuration file", nil)
+	}
+	if !common.FileExist(input) {
+		cur := getExecPathFunc()
+		log.Debug("find conf file dir: %s", cur)
+
+		input = filepath.Join(cur, input)
+	}
+	if !common.FileExist(input) {
+		return errors.NewError("config file not found!", nil)
+	}
+
+	prop, err := properties.LoadFile(input, properties.UTF8)
+	if err != nil {
+		return err
+	}
+	log.Debug("load config:\n%+v", prop.String())
+
+	val := ptr.Elem()
+	for fName, tVal := range common.GetTags(Tag, config) {
+		value, ok := prop.Get(tVal)
+		if !ok || common.IsEmpty(value) {
+			value = defaultProp(tVal)
+		}
+		if common.IsNotEmpty(value) {
+			field := val.FieldByName(fName)
+			switch field.Kind() {
+			case reflect.String:
+				field.SetString(value)
+			case reflect.Int,
+				reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+				reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				i, err := strconv.Atoi(value)
+				if err != nil {
+					return err
+				}
+				field.SetInt(int64(i))
+			case reflect.Float32:
+			case reflect.Float64:
+				i, err := strconv.ParseFloat(value, 64)
+				if err != nil {
+					return err
+				}
+				field.SetFloat(i)
+			}
+		}
+	}
+	return nil
+}

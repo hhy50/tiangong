@@ -1,49 +1,35 @@
 package client
 
 import (
-	"fmt"
-	"tiangong/common/buf"
+	"tiangong/common/conf"
 	"tiangong/common/net"
+	"time"
 )
 
 type Client struct {
-	host   string
-	port   int
-	conn   net.Conn
-	buffer buf.Buffer
+	cnf       Config
+	tcpClient net.TcpClient
 }
 
-func (s *Client) connect() {
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", s.host, s.port))
-	if err != nil {
-		panic(err)
+func (s *Client) Start() {
+
+}
+
+func handshake(conn net.Conn) {
+
+}
+
+// NewClient by specify a config file
+func NewClient(cp string) (*Client, error) {
+	c := Config{}
+	if err := conf.LoadConfig(cp, c, defaultValue); err != nil {
+		return nil, err
 	}
-	s.conn = net.Conn{Conn: conn}
 
-	//go func(c net.Conn) {
-	//	buf := make([]byte, 1024)
-	//	for {
-	//		len, err := c.Read(buf)
-	//		if len == 0 {
-	//			return
-	//		}
-	//		if err != nil {
-	//			return
-	//		}
-	//		//msg := string(buf[:len-1])
-	//	}
-	//}(s.conn)
-}
-
-func (s *Client) Write(msg []byte) {
-	s.conn.Write(msg)
-}
-
-func NewClient(host string, port int) *Client {
-	client := &Client{
-		host: host,
-		port: port,
+	tc := net.TcpClient{
+		Host:    c.ServerHost,
+		Port:    c.ServerPort,
+		Timeout: 30 * time.Second,
 	}
-	client.connect()
-	return client
+	return &Client{c, tc}, nil
 }

@@ -2,13 +2,13 @@ package server
 
 import (
 	"tiangong/common"
+	"tiangong/common/conf"
 	"tiangong/common/errors"
 	"tiangong/common/lock"
 	"tiangong/common/log"
 	"tiangong/common/net"
 	"tiangong/server/admin"
 	"tiangong/server/client"
-	"tiangong/server/conf"
 )
 
 type Status int8
@@ -61,8 +61,8 @@ func (s *tgServer) AddMapping(src string, sp int, dest string, dp int) error {
 }
 
 func NewServer(input string) (Server, error) {
-	config, err := conf.LoadConfig(input)
-	if err != nil {
+	config := Config{}
+	if err := conf.LoadConfig(input, &config, defaultValue); err != nil {
 		return nil, err
 	}
 

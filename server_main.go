@@ -6,8 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 	"tiangong/common"
 	"tiangong/common/errors"
 	"tiangong/common/log"
@@ -53,11 +51,5 @@ func main() {
 	server.Start()
 	defer server.Stop()
 	log.Info("TianGong Server started")
-	pauseProcess()
-}
-
-func pauseProcess() {
-	osSignals := make(chan os.Signal, 1)
-	signal.Notify(osSignals, os.Interrupt, syscall.SIGTERM)
-	<-osSignals
+	<-common.WaitSignal()
 }

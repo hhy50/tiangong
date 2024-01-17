@@ -11,7 +11,7 @@
             "mode": "auto",
             "buildFlags": ["-tags", "server"],
             "program": "${workspaceFolder}",
-            "args": ["-conf", "${workspaceFolder}/tiangong.conf",
+            "args": ["-conf", "${workspaceFolder}/conf/server.conf",
                         "-log.level", "DEBUG", "-log.path", "${workspaceFolder}/logs"],
             "dlvFlags": ["--check-go-version=false"]
         },
