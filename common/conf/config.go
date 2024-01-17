@@ -34,7 +34,8 @@ func LoadConfig(input string, config interface{}, defaultProp DefaultValueFunc) 
 	if common.IsEmpty(input) {
 		return errors.NewError("useage: -conf {path} to specify the configuration file", nil)
 	}
-	if !common.FileExist(input) {
+
+	if !common.FileExist(input) && !filepath.IsAbs(input) {
 		cur := getExecPathFunc()
 		log.Debug("find conf file dir: %s", cur)
 
