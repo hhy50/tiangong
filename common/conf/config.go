@@ -61,9 +61,14 @@ func LoadConfig(input string, config interface{}, defaultProp DefaultValueFunc) 
 			switch field.Kind() {
 			case reflect.String:
 				field.SetString(value)
-			case reflect.Int,
-				reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
-				reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			case reflect.Uint,
+				reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				i, err := strconv.Atoi(value)
+				if err != nil {
+					return err
+				}
+				field.SetUint(uint64(i))
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 				i, err := strconv.Atoi(value)
 				if err != nil {
 					return err

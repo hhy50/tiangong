@@ -46,6 +46,10 @@ func (p IpAddress) String() string {
 	return fmt.Sprintf("%d.%d.%d.%d", p.GetA(), p.GetB(), p.GetC(), p.GetD())
 }
 
+func (p IpAddress) Bytes() []byte {
+	return p[:]
+}
+
 func (p Port) String() string {
 	return strconv.Itoa(int(p))
 }

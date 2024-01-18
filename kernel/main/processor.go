@@ -118,7 +118,7 @@ func (p *Processor) Start() error {
 		Port:    p.ServerPort,
 		Timeout: ConnTimeout,
 	}
-	if err := p.client.Conn(p.ConnSuccess); err != nil {
+	if err := p.client.Connect(p.ConnSuccess); err != nil {
 		return err
 	}
 	return nil

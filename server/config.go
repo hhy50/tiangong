@@ -41,6 +41,7 @@ type Config struct {
 	HttpPort int    `prop:"httpPort"`
 	UserName string `prop:"username"`
 	Passwd   string `prop:"passwd"`
+	Key      string `prop:"key"`
 }
 
 // defaultValue

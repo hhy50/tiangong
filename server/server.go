@@ -3,7 +3,6 @@ package server
 import (
 	"tiangong/common"
 	"tiangong/common/conf"
-	"tiangong/common/errors"
 	"tiangong/common/lock"
 	"tiangong/common/log"
 	"tiangong/common/net"
@@ -20,32 +19,22 @@ type Server interface {
 }
 
 type tgServer struct {
+	Cnf     Config
 	Admin   admin.AdminServer
 	Clients map[string]*client.Client
-	Status  Status
 	Lock    lock.Lock
 
 	TcpSrv net.TcpServer
 }
 
-const (
-	INIT Status = iota
-	RUNNING
-	STOPED
-)
-
 func (s *tgServer) Start() error {
 	s.Lock.Lock()
 	defer s.Lock.Unlock()
 
-	if s.Status != INIT {
-		return errors.NewError("Duplicate invoke start() error", nil)
-	}
-	if err := s.TcpSrv.Listen(connHandler); err != nil {
+	if err := s.TcpSrv.Listen(s.connHandler); err != nil {
 		return err
 	}
 
-	s.Status = RUNNING
 	return nil
 }
 
@@ -78,9 +67,9 @@ func NewServer(input string) (Server, error) {
 	}
 
 	svr := &tgServer{
+		Cnf:     config,
 		Admin:   adm,
 		Clients: make(map[string]*client.Client),
-		Status:  INIT,
 		TcpSrv:  tcpSrv,
 		Lock:    lock.NewLock(),
 	}

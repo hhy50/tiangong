@@ -1,8 +1,20 @@
 package net
 
-import "tiangong/common/buf"
+import (
+	"net"
+	"tiangong/common/buf"
+)
 
-func (c Conn) ReadFrom(buffer buf.Buffer) error {
+type Conn interface {
+	net.Conn
+	ReadFrom(buffer buf.Buffer) error
+}
+
+type ConnWrap struct {
+	net.Conn
+}
+
+func (c ConnWrap) ReadFrom(buffer buf.Buffer) error {
 	bytes, err := buf.ReadAll(buffer)
 	if err != nil {
 		return err

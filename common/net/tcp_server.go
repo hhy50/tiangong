@@ -51,7 +51,7 @@ func listenConnect(listener net.Listener, connHandler ConnHandlerFunc, ctx conte
 			if err != nil {
 				continue
 			}
-			if err = connHandler(Conn{conn}); err != nil {
+			if err = connHandler(ConnWrap{conn}); err != nil {
 				_ = conn.Close()
 			}
 		}

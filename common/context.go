@@ -6,6 +6,7 @@ var (
 	EmptyCtx = context.Background()
 
 	ListenerCtxKey = "listener"
+	ServerKey      = "server"
 )
 
 type CancelFunc = context.CancelFunc

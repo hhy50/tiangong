@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"google.golang.org/protobuf/proto"
+	"tiangong/common"
 	"tiangong/common/buf"
 	"tiangong/common/errors"
 	"tiangong/common/log"
@@ -9,19 +9,20 @@ import (
 	"tiangong/kernel/transport"
 	"tiangong/kernel/transport/protocol"
 	"time"
+
+	"google.golang.org/protobuf/proto"
 )
 
 var (
-	Key     string
 	TimeOut = 15 * time.Second
 )
 
-func Authentication(conn net.Conn) (proto.Message, error) {
+func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Message, error) {
 	buffer := buf.NewBuffer(256)
 	defer buffer.Release()
 
 	if err := conn.SetDeadline(time.Now().Add(TimeOut)); err != nil {
-		return nil, errors.NewError("Auth fail, SetDeadline error", err)
+		return nil, nil, errors.NewError("Auth fail, SetDeadline error", err)
 	}
 	complete := func(status protocol.AuthStatus) {
 		response := protocol.NewAuthResponse(status)
@@ -36,44 +37,42 @@ func Authentication(conn net.Conn) (proto.Message, error) {
 
 	var header protocol.AuthHeader
 	if err := protocol.DecodeAuthHeader(conn, &header); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var body proto.Message = nil
 	switch header.Type {
 	case protocol.AuthClient:
 		body = &protocol.ClientAuth{}
-		break
 	case protocol.AuthSession:
 		body = &protocol.SessionAuth{}
-		break
 	default:
-		return nil, errors.NewError("Unsupport AuthType: ["+string(header.Type)+"]", nil)
+		return nil, nil, errors.NewError("Unsupport AuthType: ["+string(header.Type)+"]", nil)
 	}
 	if err := transport.DecodeProtoMessage(conn, int(header.Len), body); err != nil {
-		return nil, errors.NewError("Auth fail, DecodeAuthBody error", err)
+		return nil, nil, errors.NewError("Auth fail, DecodeAuthBody error", err)
 	}
 
 	// 验证服务端key的有效性
 	switch body.(type) {
 	case *protocol.ClientAuth:
 		clientAuth := body.(*protocol.ClientAuth)
-		if clientAuth.Key != Key {
+		if common.IsNotEmpty(key) && clientAuth.Key != key {
 			complete(protocol.AuthFail)
-			return nil, errors.NewError("Auth fail, client key not match", nil)
+			return nil, nil, errors.NewError("Auth fail, client key not match", nil)
 		}
-		log.Info("New client join.")
-		break
+		log.Info("New client join. ")
 	case *protocol.SessionAuth:
 		sessionAuth := body.(*protocol.SessionAuth)
 		if err := Verification(sessionAuth.Token); err != nil {
 			complete(protocol.AuthFail)
-			return nil, errors.NewError("Auth fail", err)
+			return nil, nil, errors.NewError("Auth fail", err)
 		}
 		log.Info("New session connected. token=%s, subHost=%s", sessionAuth.Token, sessionAuth.SubHost)
-		break
+	default:
+		return nil, nil, errors.NewError("Not support auth type", nil)
 	}
 
 	complete(protocol.AuthSuccess)
-	return body, nil
+	return &header, body, nil
 }

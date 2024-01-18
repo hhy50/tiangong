@@ -1,7 +1,6 @@
 package server
 
 import (
-	"github.com/google/uuid"
 	"tiangong/common"
 	"tiangong/common/net"
 	"tiangong/kernel/transport/protocol"
@@ -9,6 +8,8 @@ import (
 	"tiangong/server/client"
 	"tiangong/server/internal"
 	"tiangong/server/session"
+
+	"github.com/google/uuid"
 )
 
 type Cli = *protocol.ClientAuth
@@ -22,8 +23,8 @@ func CloseConn(conn net.Conn) {
 	_ = conn.Close()
 }
 
-func connHandler(conn net.Conn) error {
-	user, err := auth.Authentication(conn)
+func (s *tgServer) connHandler(conn net.Conn) error {
+	_, user, err := auth.Authentication(s.Cnf.Key, conn)
 	if err != nil {
 		CloseConn(conn)
 		return err
