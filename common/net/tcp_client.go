@@ -1,20 +1,30 @@
 package net
 
 import (
+	"context"
 	"fmt"
 	"tiangong/common/errors"
 	"time"
 )
 
-type TcpClient struct {
+var (
+	DefaultConnTimeout = 30 * time.Second
+)
+
+type TcpClient interface {
+	Connect(handlerFunc ConnHandlerFunc) error
+}
+
+type tcpClientImpl struct {
 	Host    string
 	Port    Port
 	Timeout time.Duration
 
+	ctx  context.Context
 	conn Conn
 }
 
-func (t *TcpClient) Connect(handlerFunc ConnHandlerFunc) error {
+func (t *tcpClientImpl) Connect(handlerFunc ConnHandlerFunc) error {
 	if handlerFunc == nil {
 		return errors.NewError("params handlerFunc Not be nil", nil)
 	}
@@ -22,7 +32,7 @@ func (t *TcpClient) Connect(handlerFunc ConnHandlerFunc) error {
 	if err != nil {
 		return err
 	}
-	if err := handlerFunc(conn); err != nil {
+	if err := handlerFunc(t.ctx, conn); err != nil {
 		_ = conn.Close()
 		return err
 	}
@@ -30,6 +40,15 @@ func (t *TcpClient) Connect(handlerFunc ConnHandlerFunc) error {
 	return nil
 }
 
-func (t *TcpClient) Disconnect() {
+func (t *tcpClientImpl) Disconnect() {
 
+}
+
+func NewTcpClient(host string, port int, ctx context.Context) TcpClient {
+	return &tcpClientImpl{
+		Host:    host,
+		Port:    Port(port),
+		Timeout: DefaultConnTimeout,
+		ctx:     ctx,
+	}
 }

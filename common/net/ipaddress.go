@@ -1,6 +1,7 @@
 package net
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
@@ -11,7 +12,7 @@ import (
 type IpAddress [net.IPv4len]byte
 
 // ConnHandlerFunc connect success exec
-type ConnHandlerFunc func(Conn) error
+type ConnHandlerFunc func(context.Context, Conn) error
 
 var (
 	Internal IpAddress

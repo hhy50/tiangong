@@ -18,17 +18,13 @@ var (
 )
 
 type Processor struct {
-	ServerHost string
-	ServerPort net.Port
-	Token      string
-	SubHost    net.IpAddress
-	client     *net.TcpClient
+	client net.TcpClient
 }
 
-func (p *Processor) ConnSuccess(conn net.Conn) error {
+func ConnSuccess(ctx context.Context, conn net.Conn) error {
 	closeFunc := conn.Close
 	// handshake
-	if err := handshake(conn, p.Token, p.SubHost); err != nil {
+	if err := handshake(conn, Token, net.ParseIp(SubHost)); err != nil {
 		_ = closeFunc()
 		return err
 	}
@@ -56,13 +52,8 @@ func init() {
 
 }
 
-func NewProcessor(host string, port int, token, sub string) Processor {
-	return Processor{
-		ServerHost: host,
-		ServerPort: net.Port(port),
-		SubHost:    net.ParseIp(sub),
-		Token:      token,
-	}
+func NewProcessor() Processor {
+	return Processor{}
 }
 
 func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
@@ -113,12 +104,8 @@ func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
 }
 
 func (p *Processor) Start() error {
-	p.client = &net.TcpClient{
-		Host:    p.ServerHost,
-		Port:    p.ServerPort,
-		Timeout: ConnTimeout,
-	}
-	if err := p.client.Connect(p.ConnSuccess); err != nil {
+	p.client = net.NewTcpClient(Server, Port, context.Background())
+	if err := p.client.Connect(ConnSuccess); err != nil {
 		return err
 	}
 	return nil

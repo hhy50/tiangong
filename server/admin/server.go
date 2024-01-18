@@ -1,11 +1,15 @@
 package admin
 
-import "tiangong/common/net"
+import (
+	"context"
+	"tiangong/common/net"
+)
 
 type AdminServer struct {
 	HttpPort int
 	UserName string
 	Password string
+	Ctx      context.Context
 
 	tcpServer net.TcpServer
 }

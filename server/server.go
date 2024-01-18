@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"tiangong/common"
 	"tiangong/common/conf"
 	"tiangong/common/lock"
@@ -8,6 +9,11 @@ import (
 	"tiangong/common/net"
 	"tiangong/server/admin"
 	"tiangong/server/client"
+)
+
+var (
+	ServerCnf Config
+	Running   = 1
 )
 
 type Status int8
@@ -19,59 +25,57 @@ type Server interface {
 }
 
 type tgServer struct {
-	Cnf     Config
 	Admin   admin.AdminServer
 	Clients map[string]*client.Client
 	Lock    lock.Lock
+	TcpSrv  net.TcpServer
+	Ctx     context.Context
 
-	TcpSrv net.TcpServer
+	status int
 }
 
 func (s *tgServer) Start() error {
 	s.Lock.Lock()
 	defer s.Lock.Unlock()
 
-	if err := s.TcpSrv.Listen(s.connHandler); err != nil {
+	if err := s.TcpSrv.ListenTCP(connHandler); err != nil {
 		return err
 	}
-
+	s.status = Running
 	return nil
 }
 
 func (s *tgServer) Stop() {
-	s.Admin.Stop()
-	s.TcpSrv.Stop()
+	if s.status != Running {
+		return
+	}
+	cancel := s.Ctx.Value(common.CancelFuncKey).(context.CancelFunc)
+	cancel()
+	s.status = 0
 	log.Warn("TianGong Server end...")
 }
 
-func (s *tgServer) AddMapping(src string, sp int, dest string, dp int) error {
-
-	return nil
-}
-
 func NewServer(input string) (Server, error) {
-	config := Config{}
-	if err := conf.LoadConfig(input, &config, defaultValue); err != nil {
+	if err := conf.LoadConfig(input, &ServerCnf, defaultValue); err != nil {
 		return nil, err
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	ctx = context.WithValue(ctx, common.CancelFuncKey, cancel)
+
 	adm := admin.AdminServer{
-		HttpPort: config.HttpPort,
-		UserName: config.UserName,
-		Password: config.Passwd,
+		HttpPort: ServerCnf.HttpPort,
+		UserName: ServerCnf.UserName,
+		Password: ServerCnf.Passwd,
+		Ctx:      ctx,
 	}
 
-	tcpSrv := net.TcpServer{
-		Host: config.Host,
-		Port: config.SrvPort,
-	}
-
-	svr := &tgServer{
-		Cnf:     config,
+	server := &tgServer{
 		Admin:   adm,
 		Clients: make(map[string]*client.Client),
-		TcpSrv:  tcpSrv,
+		TcpSrv:  net.NewTcpServer(ServerCnf.Host, ServerCnf.SrvPort, ctx),
 		Lock:    lock.NewLock(),
+		Ctx:     ctx,
 	}
-	return svr, nil
+	return server, nil
 }

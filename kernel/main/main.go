@@ -7,23 +7,23 @@ import (
 )
 
 var (
-	server  string
-	port    int
-	token   string
-	subHost string
+	Server  string
+	Port    int
+	Token   string
+	SubHost string
 )
 
 func init() {
 	// TODO parse config file
-	flag.StringVar(&server, "server", "127.0.0.1", "Specify target server")
-	flag.IntVar(&port, "port", 2024, "Specify target port")
-	flag.StringVar(&token, "token", "tiangong", "Token")
-	flag.StringVar(&subHost, "subHost", "", "SubHost")
+	flag.StringVar(&Server, "server", "127.0.0.1", "Specify target server")
+	flag.IntVar(&Port, "port", 2024, "Specify target port")
+	flag.StringVar(&Token, "token", "tiangong", "Token")
+	flag.StringVar(&SubHost, "subHost", "", "SubHost")
 }
 
 func main() {
 	log.InitLog()
-	processor := NewProcessor(server, port, token, subHost)
+	processor := NewProcessor()
 	if err := processor.Start(); err != nil {
 		log.Error("start fail, ", err)
 		return

@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"tiangong/common"
 	"tiangong/common/buf"
 	"tiangong/common/conf"
 	"tiangong/common/errors"
@@ -16,25 +17,31 @@ import (
 var (
 	ConnTimeout      = 30 * time.Second
 	HandshakeTimeout = ConnTimeout
+	ClientCnf        Config
 )
 
-type Client struct {
-	Cnf       Config
+type Client interface {
+	Start() error
+	Stop()
+}
+
+type clientImpl struct {
+	ctx       context.Context
 	tcpClient net.TcpClient
 }
 
-func (s *Client) Start() error {
-	if err := s.tcpClient.Connect(s.handshake); err != nil {
+func (s *clientImpl) Start() error {
+	if err := s.tcpClient.Connect(handshake); err != nil {
 		return err
 	}
 	return nil
 }
-func (s *Client) Stop() error {
-	s.tcpClient.Disconnect()
-	return nil
+func (s *clientImpl) Stop() {
+	cancel := s.ctx.Value(common.CancelFuncKey).(context.CancelFunc)
+	cancel()
 }
 
-func (c *Client) handshake(conn net.Conn) error {
+func handshake(ctx context.Context, conn net.Conn) error {
 	timeout := time.Now().Add(HandshakeTimeout)
 	buffer := buf.NewBuffer(256)
 	ctx, cancel := context.WithTimeout(context.Background(), HandshakeTimeout)
@@ -44,10 +51,10 @@ func (c *Client) handshake(conn net.Conn) error {
 
 	{
 		authBody := protocol.ClientAuth{
-			Name:     c.Cnf.Name,
-			Internal: net.ParseIp(c.Cnf.Internal).Bytes(),
+			Name:     ClientCnf.Name,
+			Internal: net.ParseIp(ClientCnf.Internal).Bytes(),
 			Flag:     0,
-			Key:      c.Cnf.Key,
+			Key:      ClientCnf.Key,
 		}
 		header := protocol.NewAuthHeader(kernel.VersionByte(), protocol.AuthClient)
 		header.AppendBody(&authBody)
@@ -86,20 +93,20 @@ func (c *Client) handshake(conn net.Conn) error {
 }
 
 // NewClient by specify a config file
-func NewClient(cp string) (*Client, error) {
-	c := Config{}
-	if err := conf.LoadConfig(cp, &c, defaultValue); err != nil {
+func NewClient(cp string) (Client, error) {
+	if err := conf.LoadConfig(cp, &ClientCnf, defaultValue); err != nil {
 		return nil, err
 	}
 
-	if err := c.Require(); err != nil {
+	if err := ClientCnf.Require(); err != nil {
 		return nil, err
 	}
 
-	tc := net.TcpClient{
-		Host:    c.ServerHost,
-		Port:    c.ServerPort,
-		Timeout: 30 * time.Second,
-	}
-	return &Client{c, tc}, nil
+	ctx, cancel := context.WithCancel(context.Background())
+	ctx = context.WithValue(ctx, common.CancelFuncKey, cancel)
+
+	return &clientImpl{
+		ctx:       ctx,
+		tcpClient: net.NewTcpClient(ClientCnf.ServerHost, ClientCnf.ServerPort, ctx),
+	}, nil
 }

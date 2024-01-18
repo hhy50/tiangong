@@ -3,17 +3,15 @@ package client
 import (
 	"tiangong/common"
 	"tiangong/common/errors"
-	"tiangong/common/net"
 )
 
 type Config struct {
-	ServerHost string   `prop:"serverHost"`
-	ServerPort net.Port `prop:"serverPort"`
-	Key        string   `prop:"key"`
-
-	Name     string `prop:"name"`
-	Internal string `prop:"internal"`
-	Export   string `prop:"export"`
+	ServerHost string `prop:"serverHost"`
+	ServerPort int    `prop:"serverPort"`
+	Key        string `prop:"key"`
+	Name       string `prop:"name"`
+	Internal   string `prop:"internal"`
+	Export     string `prop:"export"`
 }
 
 func (c Config) Require() error {

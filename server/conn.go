@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"tiangong/common"
 	"tiangong/common/net"
 	"tiangong/kernel/transport/protocol"
@@ -23,8 +24,8 @@ func CloseConn(conn net.Conn) {
 	_ = conn.Close()
 }
 
-func (s *tgServer) connHandler(conn net.Conn) error {
-	_, user, err := auth.Authentication(s.Cnf.Key, conn)
+func connHandler(ctx context.Context, conn net.Conn) error {
+	_, user, err := auth.Authentication(ServerCnf.Key, conn)
 	if err != nil {
 		CloseConn(conn)
 		return err
