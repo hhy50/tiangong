@@ -55,9 +55,9 @@ func (p Port) String() string {
 	return strconv.Itoa(int(p))
 }
 
-func ConvertIp(bytes []byte) IpAddress {
+func ValueOf(bytes []byte) IpAddress {
 	ip := IpAddress{}
-	copy(ip[:], bytes)
+	copy(ip[:], bytes[:net.IPv4len])
 	return ip
 }
 

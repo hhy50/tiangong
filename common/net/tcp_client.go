@@ -32,11 +32,11 @@ func (t *tcpClientImpl) Connect(handlerFunc ConnHandlerFunc) error {
 	if err != nil {
 		return err
 	}
+	t.conn = conn
 	if err := handlerFunc(t.ctx, conn); err != nil {
 		_ = conn.Close()
 		return err
 	}
-	t.conn = conn
 	return nil
 }
 

@@ -1,8 +1,9 @@
 package session
 
 import (
+	"context"
+	"runtime"
 	"tiangong/common/buf"
-	"tiangong/common/errors"
 	"tiangong/common/log"
 	"tiangong/common/net"
 	"tiangong/kernel/transport/protocol"
@@ -12,12 +13,13 @@ import (
 type Session struct {
 	Token   string
 	SubHost net.IpAddress
+	Ctx     context.Context
 
 	buffer buf.Buffer
 	conn   net.Conn
+	bridge Bridge
 }
 
-//
 // +----+------+----------+
 // | 	PacketHeader      |
 // +----+------+----------+
@@ -27,11 +29,14 @@ type Session struct {
 // +----+------+----------+
 func (s *Session) Work() {
 	defer s.Close()
-	if err := s.conn.SetDeadline(time.Time{}); err != nil {
-		log.Error("SetDeadline error", err)
-		return
-	}
-	for {
+	select {
+	case <-s.Ctx.Done():
+		runtime.Goexit()
+	default:
+		if err := s.conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
+			log.Error("SetDeadline error", err)
+			return
+		}
 		if err := s.HandlePacket(); err != nil {
 			log.Error("HandlePacket error, ", err)
 			return
@@ -46,10 +51,8 @@ func (s *Session) Close() {
 }
 
 func (s *Session) HandlePacket() error {
-	if n, err := s.buffer.Write(s.conn, protocol.PacketHeaderLen); err != nil {
+	if _, err := s.buffer.Write(s.conn, protocol.PacketHeaderLen); err != nil {
 		return err
-	} else if n != protocol.PacketHeaderLen {
-		return errors.NewError("Read PacketHeaderLen too short", nil)
 	}
 	header := protocol.PacketHeader{}
 	if err := header.Unmarshal(s.buffer); err != nil {
@@ -63,6 +66,8 @@ func (s *Session) HandlePacket() error {
 		return nil
 	}
 
-	// TODO
+	if err := s.bridge.Transport(header, s.buffer); err != nil {
+		return err
+	}
 	return nil
 }

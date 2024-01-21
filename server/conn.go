@@ -36,25 +36,22 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 	case Cli:
 		cli := user.(Cli)
 		c := buildClient(conn, cli)
-		_ = client.AddClient(&c)
+		_ = client.RegistClient(&c)
 		runner = ListenFunc(func() {
-
 		})
 		break
 	case Session:
-		ses := user.(Session)
-		s := buildSession(conn, ses)
-		_ = session.AddSession(&s)
+		subHost := net.ValueOf((user.(Session)).SubHost)
+		s := session.NewSession(subHost, (user.(Session)).Token, conn, ctx)
+		if err = session.AddSession(&s); err != nil {
+			return err
+		}
 		runner = ListenFunc(s.Work)
 		break
 	}
 
 	go runner.Run()
 	return nil
-}
-
-func buildSession(conn net.Conn, ses Session) session.Session {
-	return session.NewSession(net.ConvertIp(ses.SubHost), ses.Token, conn)
 }
 
 func buildClient(conn net.Conn, cli Cli) client.Client {

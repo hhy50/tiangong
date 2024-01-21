@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"tiangong/common"
 	"tiangong/common/buf"
 	"tiangong/common/errors"
 	"tiangong/common/log"
@@ -18,6 +19,7 @@ var (
 )
 
 type Processor struct {
+	ctx    context.Context
 	client net.TcpClient
 }
 
@@ -28,23 +30,21 @@ func ConnSuccess(ctx context.Context, conn net.Conn) error {
 		_ = closeFunc()
 		return err
 	}
-	log.Info("handshake success")
+	log.Info("connect success, target:[%s]", conn.RemoteAddr())
 
-	//go func() {
-	//	for {
-	//		len, err := c.Read(buf)
-	//		if len == 0 {
-	//			fmt.Println("服务器已停止")
-	//			return
-	//		}
-	//		if err != nil {
-	//			fmt.Println("读取异常")
-	//			return
-	//		}
-	//		msg := string(buf[:len-1])
-	//		fmt.Println("收到服务端消息: ["+msg+"], 消息长度: ", len)
-	//	}
-	//}()
+	p := common.GetProcess(ctx).(Processor)
+	go func() {
+		buffer := buf.NewRingBuffer()
+		for {
+			n, err := buffer.Write(buffer, buffer.Cap())
+			if n == 0 || err != nil {
+				_ = closeFunc()
+				log.Error("connect closed...", err)
+				p.RetryConnect()
+				return
+			}
+		}
+	}()
 	return nil
 }
 
@@ -53,7 +53,12 @@ func init() {
 }
 
 func NewProcessor() Processor {
-	return Processor{}
+	var p Processor
+
+	ctx := common.SetProcess(context.Background(), p)
+	p.ctx = ctx
+	p.client = net.NewTcpClient(Server, Port, ctx)
+	return p
 }
 
 func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
@@ -104,9 +109,23 @@ func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
 }
 
 func (p *Processor) Start() error {
-	p.client = net.NewTcpClient(Server, Port, context.Background())
 	if err := p.client.Connect(ConnSuccess); err != nil {
-		return err
+		// retry
+		go p.RetryConnect()
+		return nil
 	}
 	return nil
+}
+
+func (p *Processor) RetryConnect() {
+	ticker := time.NewTicker(5 * time.Second)
+	for {
+		<-ticker.C
+		if err := p.client.Connect(ConnSuccess); err != nil {
+			log.Error("connect fail,", err)
+		} else {
+			ticker.Stop()
+			break
+		}
+	}
 }

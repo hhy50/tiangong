@@ -1,15 +1,19 @@
 package client
 
 import (
-	"net"
-	tgNet "tiangong/common/net"
+	"tiangong/common/buf"
+	"tiangong/common/net"
 	"tiangong/kernel/transport/protocol"
 )
 
 type Client struct {
-	Name string
-	Host tgNet.IpAddress
+	Name     string
+	Internal net.IpAddress
 
-	cli  *protocol.ClientAuth
+	auth *protocol.ClientAuth
 	conn net.Conn
+}
+
+func (c *Client) Write(buffer buf.Buffer) error {
+	return c.conn.ReadFrom(buffer)
 }
