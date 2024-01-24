@@ -8,22 +8,24 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"tiangong/common"
 )
 
-var getLogFile = func(path string) (string, error) {
-	if err := os.MkdirAll(path, os.ModePerm); err != nil {
-		return "", nil
-	}
-	return filepath.Join(path, common.LogFilName), nil
-}
+const (
+	FilName = "tiangong.log"
+)
 
 var (
 	level string
 	path  string
 
 	// system log
-	logger *loggerImpl
+	logger     *loggerImpl
+	getLogFile = func(path string) (string, error) {
+		if err := os.MkdirAll(path, os.ModePerm); err != nil {
+			return "", nil
+		}
+		return filepath.Join(path, FilName), nil
+	}
 )
 
 func init() {
@@ -105,7 +107,7 @@ func formatStackTrace(message string) string {
 }
 
 func getLogWriter(path string) io.Writer {
-	if common.IsEmpty(path) {
+	if path == "" {
 		return os.Stdout
 	}
 

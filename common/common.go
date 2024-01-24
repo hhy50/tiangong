@@ -21,7 +21,6 @@ const (
 
 var (
 	DateFormat = "2006-01-02 15:04:05"
-	LogFilName = "tiangong.log"
 )
 
 func FileExist(path string) bool {

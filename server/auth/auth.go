@@ -25,6 +25,7 @@ func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Mess
 		return nil, nil, errors.NewError("Auth fail, SetDeadline error", err)
 	}
 	complete := func(status protocol.AuthStatus) {
+		log.Debug("write auth response body, status:[%d]", status)
 		response := protocol.NewAuthResponse(status)
 		if err := response.WriteTo(buffer); err != nil {
 			_ = conn.Close()
@@ -61,7 +62,7 @@ func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Mess
 			complete(protocol.AuthFail)
 			return nil, nil, errors.NewError("Auth fail, client key not match", nil)
 		}
-		log.Info("New client join. ")
+		log.Info("New client join. name: [%s], internal:[%s]", clientAuth.Name, net.ValueOf(clientAuth.Internal).String())
 	case *protocol.SessionAuth:
 		sessionAuth := body.(*protocol.SessionAuth)
 		if err := Verification(sessionAuth.Token); err != nil {

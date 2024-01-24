@@ -3,6 +3,7 @@ package net
 import (
 	"context"
 	"fmt"
+	"tiangong/common/buf"
 	"tiangong/common/errors"
 	"time"
 )
@@ -13,6 +14,7 @@ var (
 
 type TcpClient interface {
 	Connect(handlerFunc ConnHandlerFunc) error
+	Write(buffer buf.Buffer) error
 }
 
 type tcpClientImpl struct {
@@ -24,18 +26,27 @@ type tcpClientImpl struct {
 	conn Conn
 }
 
-func (t *tcpClientImpl) Connect(handlerFunc ConnHandlerFunc) error {
+func (t *tcpClientImpl) Connect(handlerFunc ConnHandlerFunc) (err error) {
 	if handlerFunc == nil {
 		return errors.NewError("params handlerFunc Not be nil", nil)
 	}
-	conn, err := Dial("tcp", fmt.Sprintf("%s:%s", t.Host, t.Port.String()))
+	t.conn, err = Dial("tcp", fmt.Sprintf("%s:%s", t.Host, t.Port.String()))
 	if err != nil {
 		return err
 	}
-	t.conn = conn
-	if err := handlerFunc(t.ctx, conn); err != nil {
-		_ = conn.Close()
+	if err = handlerFunc(t.ctx, t.conn); err != nil {
+		t.conn = nil
+		_ = t.conn.Close()
 		return err
+	}
+	return err
+}
+
+func (t *tcpClientImpl) Write(buffer buf.Buffer) error {
+	if t.conn != nil {
+		if err := t.conn.ReadFrom(buffer); err != nil {
+			return err
+		}
 	}
 	return nil
 }

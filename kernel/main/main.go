@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"os"
 	"tiangong/common"
+	"tiangong/common/buf"
 	"tiangong/common/log"
 )
 
@@ -22,6 +24,7 @@ func init() {
 }
 
 func main() {
+	flag.Parse()
 	log.InitLog()
 	processor := NewProcessor()
 	if err := processor.Start(); err != nil {
@@ -29,5 +32,16 @@ func main() {
 		return
 	}
 	log.Info("Kernel client start success")
+	go func() {
+		log.Info("opening stdin io...")
+		for {
+			buffer := buf.NewRingBuffer()
+			if _, err := buffer.Write(os.Stdin, buffer.Cap()); err != nil {
+				log.Error("Read form stdio error", err)
+			} else if err := processor.WriteToRemote(0, buffer); err != nil {
+				log.Error("WriteToRemote error", err)
+			}
+		}
+	}()
 	<-common.WaitSignal()
 }

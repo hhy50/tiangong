@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math"
 	"tiangong/common"
 	"tiangong/common/buf"
 	"tiangong/common/errors"
@@ -19,8 +20,9 @@ var (
 )
 
 type Processor struct {
-	ctx    context.Context
-	client net.TcpClient
+	ctx         context.Context
+	client      net.TcpClient
+	incrementer common.Incrementer
 }
 
 func ConnSuccess(ctx context.Context, conn net.Conn) error {
@@ -35,12 +37,15 @@ func ConnSuccess(ctx context.Context, conn net.Conn) error {
 	p := common.GetProcess(ctx).(Processor)
 	go func() {
 		buffer := buf.NewRingBuffer()
+		defer buffer.Release()
 		for {
 			n, err := buffer.Write(buffer, buffer.Cap())
 			if n == 0 || err != nil {
 				_ = closeFunc()
 				log.Error("connect closed...", err)
-				p.RetryConnect()
+				go common.Retry(func() error {
+					return p.client.Connect(ConnSuccess)
+				}).Run(3*time.Second, -1)
 				return
 			}
 		}
@@ -53,7 +58,9 @@ func init() {
 }
 
 func NewProcessor() Processor {
-	var p Processor
+	p := Processor{
+		incrementer: common.Incrementer{Range: common.Range{0, math.MaxUint32}},
+	}
 
 	ctx := common.SetProcess(context.Background(), p)
 	p.ctx = ctx
@@ -110,22 +117,31 @@ func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
 
 func (p *Processor) Start() error {
 	if err := p.client.Connect(ConnSuccess); err != nil {
-		// retry
-		go p.RetryConnect()
+		log.Error("connect tiangong-server error retry..., ", err)
+		go common.Retry(func() error {
+			return p.client.Connect(ConnSuccess)
+		}).Run(3*time.Second, -1)
 		return nil
 	}
 	return nil
 }
 
-func (p *Processor) RetryConnect() {
-	ticker := time.NewTicker(5 * time.Second)
-	for {
-		<-ticker.C
-		if err := p.client.Connect(ConnSuccess); err != nil {
-			log.Error("connect fail,", err)
-		} else {
-			ticker.Stop()
-			break
-		}
+func (p *Processor) WriteToRemote(proto byte, bytes buf.Buffer) error {
+	l := bytes.Len()
+	if l > math.MaxUint16 {
+		return errors.NewError("packet length exceeding maximum limit", nil)
 	}
+	h := protocol.PacketHeader{
+		Len:      uint16(l),
+		Rid:      uint32(p.incrementer.Next()),
+		Protocol: proto,
+	}
+
+	buffer := buf.NewBuffer(protocol.PacketHeaderLen + l)
+	defer buffer.Release()
+
+	_ = h.WriteTo(buffer)
+	// write body
+	_, _ = buffer.Write(bytes, l)
+	return p.client.Write(buffer)
 }

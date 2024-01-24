@@ -42,7 +42,8 @@ func main() {
 		return
 	}
 	if err := c.Start(); err != nil {
-		log.Error("Client start error", err)
+		log.Error("Client start error, retry...", err)
+		go common.Retry(c.Start).Run(3*time.Second, -1)
 		return
 	}
 	log.Info("TianGong Client started")
