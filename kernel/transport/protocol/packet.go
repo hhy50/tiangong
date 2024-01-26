@@ -26,7 +26,7 @@ func (h *PacketHeader) WriteTo(buffer buf.Buffer) error {
 	return nil
 }
 
-func (h *PacketHeader) Unmarshal(buffer buf.Buffer) error {
+func (h *PacketHeader) ReadFrom(buffer buf.Buffer) error {
 	if buffer.Len() < PacketHeaderLen {
 		return errors.NewError("header([]byte) len too short, Minimum requirement "+strconv.Itoa(PacketHeaderLen)+"bytes", io.EOF)
 	}

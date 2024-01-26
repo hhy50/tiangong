@@ -7,7 +7,12 @@ const (
 	TCP
 	UDP
 	ICMP
+	HTTP
+	HTTPS
+	WS
 )
+
+var ()
 
 func (p Protocol) String() string {
 	switch p {

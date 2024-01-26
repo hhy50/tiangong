@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"tiangong/common"
 	"tiangong/common/buf"
 	"tiangong/common/conf"
@@ -18,6 +19,9 @@ var (
 	ConnTimeout      = 30 * time.Second
 	HandshakeTimeout = ConnTimeout
 	ClientCnf        Config
+
+	// ClientMsgType
+	Heartbeat byte = 1
 )
 
 type Client interface {
@@ -34,6 +38,22 @@ func (s *clientImpl) Start() error {
 	if err := s.tcpClient.Connect(handshake); err != nil {
 		return err
 	}
+	go common.TimerFunc(func() {
+		body := protocol.ClientMessageBody{
+			Type:      Heartbeat,
+			Timestamp: uint64(time.Now().UnixMilli()),
+		}
+
+		buffer := buf.NewBuffer(protocol.ClientMessageBodyLen)
+		defer buffer.Release()
+
+		_ = body.WriteTo(buffer)
+		if err := s.tcpClient.Write(buffer); err != nil {
+			log.Error("send heartbeat packet error", err)
+			runtime.Goexit()
+		}
+		log.Debug("send heartbeat packet success")
+	}).Run(time.Minute)
 	return nil
 }
 func (s *clientImpl) Stop() {

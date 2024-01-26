@@ -55,7 +55,7 @@ func (s *Session) HandlePacket() error {
 		return err
 	}
 	header := protocol.PacketHeader{}
-	if err := header.Unmarshal(s.buffer); err != nil {
+	if err := header.ReadFrom(s.buffer); err != nil {
 		s.Close()
 	}
 	log.Debug("Receive packet header, protocol:%s, rid:%d, len:%d", protocol.Protocol(header.Protocol).String(), header.Rid, header.Len)

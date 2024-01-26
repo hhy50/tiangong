@@ -35,10 +35,9 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 	switch user.(type) {
 	case Cli:
 		cli := user.(Cli)
-		c := buildClient(conn, cli)
+		c := buildClient(ctx, conn, cli)
 		_ = client.RegistClient(&c)
-		runner = ListenFunc(func() {
-		})
+		runner = ListenFunc(c.Keepalive)
 		break
 	case Session:
 		subHost := net.ValueOf((user.(Session)).SubHost)
@@ -54,7 +53,7 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 	return nil
 }
 
-func buildClient(conn net.Conn, cli Cli) client.Client {
+func buildClient(ctx context.Context, conn net.Conn, cli Cli) client.Client {
 	getInternalIpFromReq := func() net.IpAddress {
 		if len(cli.Internal) == 4 {
 			i := cli.Internal
@@ -68,5 +67,5 @@ func buildClient(conn net.Conn, cli Cli) client.Client {
 		uid, _ := uuid.NewUUID()
 		cli.Name = uid.String()
 	}
-	return client.NewClient(internalIP, cli, conn)
+	return client.NewClient(ctx, internalIP, cli, conn)
 }

@@ -62,6 +62,7 @@ func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Mess
 			complete(protocol.AuthFail)
 			return nil, nil, errors.NewError("Auth fail, client key not match", nil)
 		}
+		complete(protocol.AuthSuccess)
 		log.Info("New client join. name: [%s], internal:[%s]", clientAuth.Name, net.ValueOf(clientAuth.Internal).String())
 	case *protocol.SessionAuth:
 		sessionAuth := body.(*protocol.SessionAuth)
@@ -69,11 +70,10 @@ func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Mess
 			complete(protocol.AuthFail)
 			return nil, nil, errors.NewError("Auth fail", err)
 		}
+		complete(protocol.AuthSuccess)
 		log.Info("New session connected. token=%s, subHost=%s", sessionAuth.Token, sessionAuth.SubHost)
 	default:
 		return nil, nil, errors.NewError("Not support auth type", nil)
 	}
-
-	complete(protocol.AuthSuccess)
 	return &header, body, nil
 }
