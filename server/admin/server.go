@@ -2,7 +2,7 @@ package admin
 
 import (
 	"context"
-	"tiangong/common/net"
+	"github.com/haiyanghan/tiangong/common/net"
 )
 
 type AdminServer struct {

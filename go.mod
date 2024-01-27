@@ -1,4 +1,4 @@
-module tiangong
+module github.com/haiyanghan/tiangong
 
 go 1.18
 

@@ -2,11 +2,11 @@ package session
 
 import (
 	"context"
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/log"
+	"github.com/haiyanghan/tiangong/common/net"
+	"github.com/haiyanghan/tiangong/transport/protocol"
 	"runtime"
-	"tiangong/common/buf"
-	"tiangong/common/log"
-	"tiangong/common/net"
-	"tiangong/kernel/transport/protocol"
 	"time"
 )
 

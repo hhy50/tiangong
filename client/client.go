@@ -3,16 +3,17 @@ package client
 import (
 	"context"
 	"fmt"
-	"runtime"
-	"tiangong/common"
-	"tiangong/common/buf"
-	"tiangong/common/conf"
-	"tiangong/common/errors"
-	"tiangong/common/log"
-	"tiangong/common/net"
-	"tiangong/kernel"
-	"tiangong/kernel/transport/protocol"
+	"strings"
 	"time"
+
+	"github.com/haiyanghan/tiangong"
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/conf"
+	"github.com/haiyanghan/tiangong/common/errors"
+	"github.com/haiyanghan/tiangong/common/log"
+	"github.com/haiyanghan/tiangong/common/net"
+	"github.com/haiyanghan/tiangong/transport/protocol"
 )
 
 var (
@@ -36,23 +37,14 @@ type clientImpl struct {
 
 func (s *clientImpl) Start() error {
 	if err := s.tcpClient.Connect(handshake); err != nil {
-		return err
+		go common.OnceTimerFunc(func() {
+			log.Warn("connect target server error [%v], wait retry...", err)
+			_ = s.Start()
+		}).Run(10 * time.Second)
+		return nil
 	}
 	go common.TimerFunc(func() {
-		body := protocol.ClientMessageBody{
-			Type:      Heartbeat,
-			Timestamp: uint64(time.Now().UnixMilli()),
-		}
-
-		buffer := buf.NewBuffer(protocol.ClientMessageBodyLen)
-		defer buffer.Release()
-
-		_ = body.WriteTo(buffer)
-		if err := s.tcpClient.Write(buffer); err != nil {
-			log.Error("send heartbeat packet error", err)
-			runtime.Goexit()
-		}
-		log.Debug("send heartbeat packet success")
+		heartbeat(s.tcpClient)
 	}).Run(time.Minute)
 	return nil
 }
@@ -61,10 +53,32 @@ func (s *clientImpl) Stop() {
 	cancel()
 }
 
+func heartbeat(tcpClient net.TcpClient) {
+	body := protocol.ClientMessageBody{
+		Type:      Heartbeat,
+		Timestamp: uint64(time.Now().UnixMilli()),
+	}
+
+	buffer := buf.NewBuffer(protocol.ClientMessageBodyLen)
+	defer buffer.Release()
+
+	_ = body.WriteTo(buffer)
+	if err := tcpClient.Write(buffer); err != nil {
+		log.Error("send heartbeat packet error, ", err)
+
+		if strings.Contains(err.Error(), "closed") {
+			tcpClient.Disconnect()
+			tcpClient.Connect(handshake)
+		}
+		return
+	}
+	log.Debug("send heartbeat packet success")
+}
+
 func handshake(ctx context.Context, conn net.Conn) error {
 	timeout := time.Now().Add(HandshakeTimeout)
 	buffer := buf.NewBuffer(256)
-	ctx, cancel := context.WithTimeout(context.Background(), HandshakeTimeout)
+	ctx, cancel := context.WithTimeout(ctx, HandshakeTimeout)
 
 	defer cancel()
 	defer buffer.Release()
@@ -76,7 +90,7 @@ func handshake(ctx context.Context, conn net.Conn) error {
 			Flag:     0,
 			Key:      ClientCnf.Key,
 		}
-		header := protocol.NewAuthHeader(kernel.VersionByte(), protocol.AuthClient)
+		header := protocol.NewAuthHeader(tiangong.VersionByte(), protocol.AuthClient)
 		header.AppendBody(&authBody)
 		if err := header.WriteTo(buffer); err != nil {
 			return err
@@ -108,6 +122,11 @@ func handshake(ctx context.Context, conn net.Conn) error {
 		}
 	}
 
+	if err := conn.SetWriteDeadline(time.Time{}); err != nil {
+		return errors.NewError("SetWriteDeadline error", err)
+	}
+
+	log.Info("connect target server [%s] seuccess", conn.RemoteAddr().String())
 	log.Info("handshake success")
 	return nil
 }

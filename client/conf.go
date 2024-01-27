@@ -1,8 +1,8 @@
 package client
 
 import (
-	"tiangong/common"
-	"tiangong/common/errors"
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/errors"
 )
 
 type Config struct {

@@ -1,8 +1,8 @@
 package net_test
 
 import (
+	"github.com/haiyanghan/tiangong/common/net"
 	"testing"
-	"tiangong/common/net"
 )
 
 func TestIpAddress(t *testing.T) {

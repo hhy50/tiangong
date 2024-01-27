@@ -1,10 +1,10 @@
 package session
 
 import (
-	"tiangong/common/buf"
-	"tiangong/common/log"
-	"tiangong/kernel/transport/protocol"
-	"tiangong/server/client"
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/log"
+	"github.com/haiyanghan/tiangong/server/client"
+	"github.com/haiyanghan/tiangong/transport/protocol"
 )
 
 type Bridge interface {

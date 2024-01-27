@@ -1,13 +1,13 @@
 package conf
 
 import (
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/errors"
+	"github.com/haiyanghan/tiangong/common/log"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
-	"tiangong/common"
-	"tiangong/common/errors"
-	"tiangong/common/log"
 
 	"github.com/magiconair/properties"
 )

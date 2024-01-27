@@ -2,12 +2,16 @@ package client
 
 import (
 	"context"
+	"fmt"
+	"github.com/haiyanghan/tiangong/common/errors"
 	"runtime"
-	"tiangong/common/buf"
-	"tiangong/common/log"
-	"tiangong/common/net"
-	"tiangong/kernel/transport/protocol"
+	"strings"
 	"time"
+
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/log"
+	"github.com/haiyanghan/tiangong/common/net"
+	"github.com/haiyanghan/tiangong/transport/protocol"
 )
 
 type Client struct {
@@ -32,6 +36,10 @@ func (c *Client) Read(buffer buf.Buffer) error {
 	if _, err := buffer.Write(c.conn, buffer.Cap()); err != nil {
 		return err
 	}
+	if buffer.Len() == 0 {
+		c.Offline()
+		return errors.NewError("read empty packet, force offline", nil)
+	}
 	return nil
 }
 
@@ -39,18 +47,29 @@ func (c *Client) Keepalive() {
 	buffer := buf.NewRingBuffer()
 	defer buffer.Release()
 	defer c.Offline()
-
-	select {
-	case <-c.ctx.Done():
-		runtime.Goexit()
-	default:
-		if err := c.Read(buffer); err != nil {
-			log.Error("read bytes from client error, ", err)
-			return
+	for {
+		select {
+		case <-c.ctx.Done():
+			runtime.Goexit()
+		default:
+			if err := c.Read(buffer); err != nil {
+				switch err.(type) {
+				case *net.OpError:
+					if strings.Contains(err.Error(), "timeout") {
+						continue
+					}
+					if strings.Contains(err.Error(), "closed") {
+						runtime.Goexit()
+					}
+				default:
+					log.Error("read bytes from client error, ", err)
+					return
+				}
+			}
+			log.Debug("Recive %d bytes from client[%s]", buffer.Len(), c.GetName())
+			handlerResponse(buffer)
 		}
-		handlerResponse(buffer)
 	}
-
 }
 
 func handlerResponse(buffer buf.Buffer) {
@@ -59,9 +78,16 @@ func handlerResponse(buffer buf.Buffer) {
 }
 
 func (c *Client) Offline() {
+	Lock.Lock()
+	defer Lock.Unlock()
+
 	_ = c.conn.Close()
 	c.cancel()
 	delete(Clients, c.Internal)
 	delete(ClientNames, c.Name)
-	log.Warn("cliet [%s-%s] offlined...", c.Name, c.Internal.String())
+	log.Warn("client[%s-%s] offlined...", c.GetName(), c.Internal.String())
+}
+
+func (c *Client) GetName() string {
+	return fmt.Sprintf("%s-%s", c.Name, c.Internal.String())
 }

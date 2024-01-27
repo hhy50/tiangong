@@ -1,8 +1,8 @@
 package buf
 
 import (
+	"github.com/haiyanghan/tiangong/common/errors"
 	"io"
-	"tiangong/common/errors"
 )
 
 const (

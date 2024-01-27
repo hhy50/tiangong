@@ -1,8 +1,8 @@
 package common_test
 
 import (
+	"github.com/haiyanghan/tiangong/common"
 	"testing"
-	"tiangong/common"
 )
 
 func TestEmpty(t *testing.T) {

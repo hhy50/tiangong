@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/log"
 	"os"
-	"tiangong/common"
-	"tiangong/common/buf"
-	"tiangong/common/log"
 )
 
 var (
@@ -28,7 +28,7 @@ func main() {
 	log.InitLog()
 	processor := NewProcessor()
 	if err := processor.Start(); err != nil {
-		log.Error("start fail, ", err)
+		log.Error("kernel start error, ", err)
 		return
 	}
 	log.Info("Kernel client start success")

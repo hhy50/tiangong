@@ -3,9 +3,13 @@ package net
 import (
 	"context"
 	"fmt"
-	"tiangong/common/buf"
-	"tiangong/common/errors"
 	"time"
+
+	"github.com/haiyanghan/tiangong/common/log"
+
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/errors"
 )
 
 var (
@@ -14,6 +18,7 @@ var (
 
 type TcpClient interface {
 	Connect(handlerFunc ConnHandlerFunc) error
+	Disconnect() error
 	Write(buffer buf.Buffer) error
 }
 
@@ -34,9 +39,12 @@ func (t *tcpClientImpl) Connect(handlerFunc ConnHandlerFunc) (err error) {
 	if err != nil {
 		return err
 	}
-	if err = handlerFunc(t.ctx, t.conn); err != nil {
-		t.conn = nil
+
+	ctx := context.WithValue(t.ctx, common.TcpClientKey, t)
+	if err = handlerFunc(ctx, t.conn); err != nil {
+		log.Error("[TCP] connect closing....", err)
 		_ = t.conn.Close()
+		t.conn = nil
 		return err
 	}
 	return err
@@ -47,12 +55,17 @@ func (t *tcpClientImpl) Write(buffer buf.Buffer) error {
 		if err := t.conn.ReadFrom(buffer); err != nil {
 			return err
 		}
+		return nil
 	}
-	return nil
+	return errors.NewError("connect closed", nil)
 }
 
-func (t *tcpClientImpl) Disconnect() {
-
+func (t *tcpClientImpl) Disconnect() error {
+	if t.conn != nil {
+		_ = t.conn.Close()
+		t.conn = nil
+	}
+	return nil
 }
 
 func NewTcpClient(host string, port int, ctx context.Context) TcpClient {

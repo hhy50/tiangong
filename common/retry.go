@@ -1,7 +1,7 @@
 package common
 
 import (
-	"tiangong/common/log"
+	"github.com/haiyanghan/tiangong/common/log"
 	"time"
 )
 

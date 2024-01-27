@@ -2,13 +2,13 @@ package server
 
 import (
 	"context"
-	"tiangong/common"
-	"tiangong/common/net"
-	"tiangong/kernel/transport/protocol"
-	"tiangong/server/auth"
-	"tiangong/server/client"
-	"tiangong/server/internal"
-	"tiangong/server/session"
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/net"
+	"github.com/haiyanghan/tiangong/server/auth"
+	"github.com/haiyanghan/tiangong/server/client"
+	"github.com/haiyanghan/tiangong/server/internal"
+	"github.com/haiyanghan/tiangong/server/session"
+	"github.com/haiyanghan/tiangong/transport/protocol"
 
 	"github.com/google/uuid"
 )
@@ -20,14 +20,9 @@ type ListenFunc func()
 
 func (l ListenFunc) Run() { l() }
 
-func CloseConn(conn net.Conn) {
-	_ = conn.Close()
-}
-
 func connHandler(ctx context.Context, conn net.Conn) error {
 	_, user, err := auth.Authentication(ServerCnf.Key, conn)
 	if err != nil {
-		CloseConn(conn)
 		return err
 	}
 

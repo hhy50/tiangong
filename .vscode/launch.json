@@ -9,8 +9,8 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "buildFlags": ["-tags", "server"],
-            "program": "${workspaceFolder}",
+            "buildFlags": ["-tags", "server,debug"],
+            "program": "${workspaceFolder}/main",
             "args": ["-conf", "${workspaceFolder}/conf/server.conf",
                         "-log.level", "DEBUG"],
             "dlvFlags": ["--check-go-version=false"]
@@ -20,8 +20,8 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "buildFlags": ["-tags", "client"],
-            "program": "${workspaceFolder}",
+            "buildFlags": ["-tags", "client,debug"],
+            "program": "${workspaceFolder}/main",
             "args": ["-conf", "${workspaceFolder}/conf/client.conf",
                         "-log.level", "DEBUG"],
             "dlvFlags": ["--check-go-version=false"]

@@ -1,8 +1,8 @@
 package buf_test
 
 import (
+	"github.com/haiyanghan/tiangong/common/buf"
 	"testing"
-	"tiangong/common/buf"
 )
 
 func TestRingBuffer(t *testing.T) {

@@ -1,8 +1,8 @@
 package lock_test
 
 import (
+	"github.com/haiyanghan/tiangong/common/lock"
 	"testing"
-	"tiangong/common/lock"
 	"time"
 )
 

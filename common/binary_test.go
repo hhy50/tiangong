@@ -2,8 +2,8 @@ package common_test
 
 import (
 	"encoding/binary"
+	"github.com/haiyanghan/tiangong/common"
 	"testing"
-	"tiangong/common"
 )
 
 var (

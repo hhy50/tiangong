@@ -8,7 +8,8 @@ var (
 	CancelFuncKey = "cancelFunc"
 	ServerKey     = "Server"
 
-	ClientKey = "Client"
+	ClientKey    = "Client"
+	TcpClientKey = "TcpClient"
 
 	ProcessKey = "Processor"
 )

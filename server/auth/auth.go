@@ -1,13 +1,14 @@
 package auth
 
 import (
-	"tiangong/common"
-	"tiangong/common/buf"
-	"tiangong/common/errors"
-	"tiangong/common/log"
-	"tiangong/common/net"
-	"tiangong/kernel/transport"
-	"tiangong/kernel/transport/protocol"
+	"fmt"
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/errors"
+	"github.com/haiyanghan/tiangong/common/log"
+	"github.com/haiyanghan/tiangong/common/net"
+	"github.com/haiyanghan/tiangong/transport"
+	"github.com/haiyanghan/tiangong/transport/protocol"
 	"time"
 
 	"google.golang.org/protobuf/proto"
@@ -25,19 +26,28 @@ func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Mess
 		return nil, nil, errors.NewError("Auth fail, SetDeadline error", err)
 	}
 	complete := func(status protocol.AuthStatus) {
+		_ = buffer.Clear()
 		log.Debug("write auth response body, status:[%d]", status)
 		response := protocol.NewAuthResponse(status)
 		if err := response.WriteTo(buffer); err != nil {
-			_ = conn.Close()
+			log.Warn("write to auth response error", err)
+			return
 		}
 
 		if err := conn.ReadFrom(buffer); err != nil {
-			_ = conn.Close()
+			log.Warn("write to auth response error", err)
+			return
 		}
 	}
 
+	if n, err := buffer.Write(conn, protocol.AuthHeaderLen); err != nil || n != protocol.AuthHeaderLen {
+		return nil, nil, errors.NewError(
+			fmt.Sprintf("read bytes from connect too short, should minnum read %d bytes actual reading %d bytes",
+				protocol.AuthHeaderLen, n), err)
+	}
+
 	var header protocol.AuthHeader
-	if err := protocol.DecodeAuthHeader(conn, &header); err != nil {
+	if err := protocol.DecodeAuthHeader(buffer, &header); err != nil {
 		return nil, nil, err
 	}
 
@@ -50,6 +60,7 @@ func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Mess
 	default:
 		return nil, nil, errors.NewError("Unsupport AuthType: ["+string(header.Type)+"]", nil)
 	}
+
 	if err := transport.DecodeProtoMessage(conn, int(header.Len), body); err != nil {
 		return nil, nil, errors.NewError("Auth fail, DecodeAuthBody error", err)
 	}

@@ -2,9 +2,9 @@ package session
 
 import (
 	"context"
-	"tiangong/common/buf"
-	"tiangong/common/net"
-	"tiangong/server/client"
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/net"
+	"github.com/haiyanghan/tiangong/server/client"
 )
 
 var sessions []*Session = make([]*Session, 128)

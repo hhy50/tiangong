@@ -1,10 +1,10 @@
 package buf
 
 import (
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/lock"
 	"io"
 	"sync"
-	"tiangong/common"
-	"tiangong/common/lock"
 )
 
 // RingBuffer is an implementation of Buffer using a ring buffer.
@@ -23,7 +23,6 @@ func (b *RingBuffer) Clear() error {
 	defer b.lock.Unlock()
 
 	b.offset_w, b.offset_r = 0, 0
-	b.len = 0
 	return nil
 }
 

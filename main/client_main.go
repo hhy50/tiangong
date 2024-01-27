@@ -6,11 +6,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"tiangong/client"
-	"tiangong/common"
-	"tiangong/common/log"
-	"tiangong/kernel"
 	"time"
+
+	"github.com/haiyanghan/tiangong"
+	"github.com/haiyanghan/tiangong/client"
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/log"
 )
 
 var (
@@ -25,9 +26,9 @@ func init() {
 	   | | | | (_| | | | |_____| |_| | (_) | | | | (_| | | |___| |___ | || |___| |\  | | |
 	   |_| |_|\__,_|_| |_|      \____|\___/|_| |_|\__, |  \____|_____|___|_____|_| \_| |_|
 	                                               |___/
-		Kernel Version: %s Pid:%d Now: %s
+		TianGong Version: %s Pid:%d Now: %s
 `
-	fmt.Printf(banner, kernel.Version(), os.Getpid(), time.Now().Format(common.DateFormat))
+	fmt.Printf(banner, tiangong.Version(), os.Getpid(), time.Now().Format(common.DateFormat))
 	flag.StringVar(&cp, "conf", "", "Config file path")
 }
 
@@ -42,8 +43,7 @@ func main() {
 		return
 	}
 	if err := c.Start(); err != nil {
-		log.Error("Client start error, retry...", err)
-		go common.Retry(c.Start).Run(3*time.Second, -1)
+		log.Error("Client start error, ", err)
 		return
 	}
 	log.Info("TianGong Client started")

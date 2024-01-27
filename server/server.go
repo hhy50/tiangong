@@ -2,13 +2,13 @@ package server
 
 import (
 	"context"
-	"tiangong/common"
-	"tiangong/common/conf"
-	"tiangong/common/lock"
-	"tiangong/common/log"
-	"tiangong/common/net"
-	"tiangong/server/admin"
-	"tiangong/server/client"
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/conf"
+	"github.com/haiyanghan/tiangong/common/lock"
+	"github.com/haiyanghan/tiangong/common/log"
+	"github.com/haiyanghan/tiangong/common/net"
+	"github.com/haiyanghan/tiangong/server/admin"
+	"github.com/haiyanghan/tiangong/server/client"
 )
 
 var (
@@ -41,6 +41,7 @@ func (s *tgServer) Start() error {
 	if err := s.TcpSrv.ListenTCP(connHandler); err != nil {
 		return err
 	}
+	client.StartActiveCheck(s.Ctx)
 	s.status = Running
 	return nil
 }

@@ -1,10 +1,10 @@
 package protocol
 
 import (
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/errors"
 	"io"
 	"strconv"
-	"tiangong/common/buf"
-	"tiangong/common/errors"
 	"unsafe"
 )
 

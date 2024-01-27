@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"tiangong/common"
-	"tiangong/common/errors"
-	"tiangong/common/log"
+	"runtime"
 	"time"
+
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/errors"
+	"github.com/haiyanghan/tiangong/common/log"
 )
 
 var (
@@ -58,7 +60,7 @@ func listenConnect(s *tcpServerImpl, connHandler ConnHandlerFunc) {
 	for {
 		select {
 		case <-s.ctx.Done():
-			return
+			runtime.Goexit()
 		default:
 			if listener, ok := s.listener.(*net.TCPListener); ok {
 				_ = listener.SetDeadline(time.Now().Add(AcceptTimeout))
@@ -69,6 +71,7 @@ func listenConnect(s *tcpServerImpl, connHandler ConnHandlerFunc) {
 			}
 			if err = connHandler(s.ctx, ConnWrap{conn}); err != nil {
 				_ = conn.Close()
+				log.Error("%s connect closed...", err, logPrefix)
 			}
 		}
 	}

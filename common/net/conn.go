@@ -1,9 +1,9 @@
 package net
 
 import (
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/log"
 	"net"
-	"tiangong/common/buf"
-	"tiangong/common/log"
 )
 
 type Conn interface {

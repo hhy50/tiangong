@@ -1,11 +1,11 @@
 package buf
 
 import (
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/errors"
+	"github.com/haiyanghan/tiangong/common/lock"
 	"io"
 	"sync"
-	"tiangong/common"
-	"tiangong/common/errors"
-	"tiangong/common/lock"
 )
 
 type ByteBuffer struct {

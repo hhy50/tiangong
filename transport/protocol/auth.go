@@ -2,11 +2,11 @@ package protocol
 
 import (
 	"fmt"
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/errors"
 	"google.golang.org/protobuf/proto"
 	"io"
 	"math"
-	"tiangong/common/buf"
-	"tiangong/common/errors"
 )
 
 type AuthType = byte
@@ -82,13 +82,10 @@ func (h *AuthHeader) WriteTo(buffer buf.Buffer) error {
 	return nil
 }
 
-func DecodeAuthHeader(reader io.Reader, header *AuthHeader) error {
-	bytes := [AuthHeaderLen]byte{}
-	if n, err := reader.Read(bytes[:]); err != nil || n != AuthHeaderLen {
-		return errors.NewError(fmt.Sprintf("Auth fial, expect read %d bytes, actuality read %d bytes", AuthHeaderLen, n), err)
+func DecodeAuthHeader(buffer buf.Buffer, header *AuthHeader) error {
+	if buffer.Cap() < AuthHeaderLen {
+		return io.EOF
 	}
-	buffer := buf.Wrap(bytes[:])
-	defer buffer.Release()
 
 	header.Version, _ = buf.ReadByte(buffer)
 	header.Type, _ = buf.ReadByte(buffer)

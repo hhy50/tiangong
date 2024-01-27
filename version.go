@@ -1,4 +1,4 @@
-package kernel
+package tiangong
 
 const version = "0.0.1"
 

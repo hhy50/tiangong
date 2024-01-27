@@ -2,7 +2,7 @@ package buf
 
 import (
 	"encoding/binary"
-	"tiangong/common"
+	"github.com/haiyanghan/tiangong/common"
 )
 
 func WriteByte(buffer Buffer, b byte) error {

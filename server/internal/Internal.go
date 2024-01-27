@@ -1,9 +1,9 @@
 package internal
 
 import (
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/net"
 	"math"
-	"tiangong/common"
-	"tiangong/common/net"
 )
 
 var (

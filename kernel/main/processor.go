@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"tiangong/common"
-	"tiangong/common/buf"
-	"tiangong/common/errors"
-	"tiangong/common/log"
-	"tiangong/common/net"
-	"tiangong/kernel"
-	"tiangong/kernel/transport/protocol"
 	"time"
+
+	"github.com/haiyanghan/tiangong"
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/errors"
+	"github.com/haiyanghan/tiangong/common/log"
+	"github.com/haiyanghan/tiangong/common/net"
+	"github.com/haiyanghan/tiangong/transport/protocol"
 )
 
 var (
@@ -80,7 +81,7 @@ func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
 			Token:   token,
 			SubHost: subHost[:],
 		}
-		header := protocol.NewAuthHeader(kernel.VersionByte(), protocol.AuthSession)
+		header := protocol.NewAuthHeader(tiangong.VersionByte(), protocol.AuthSession)
 		header.AppendBody(&authBody)
 		if err := header.WriteTo(buffer); err != nil {
 			return err

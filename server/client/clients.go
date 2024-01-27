@@ -2,12 +2,15 @@ package client
 
 import (
 	"context"
-	"tiangong/common/errors"
-	"tiangong/common/lock"
-	"tiangong/common/log"
-	"tiangong/common/net"
-	"tiangong/kernel/transport/protocol"
+	"github.com/haiyanghan/tiangong/common"
+	"runtime"
 	"time"
+
+	"github.com/haiyanghan/tiangong/common/errors"
+	"github.com/haiyanghan/tiangong/common/lock"
+	"github.com/haiyanghan/tiangong/common/log"
+	"github.com/haiyanghan/tiangong/common/net"
+	"github.com/haiyanghan/tiangong/transport/protocol"
 )
 
 var (
@@ -17,25 +20,25 @@ var (
 	Lock        = lock.NewLock()
 
 	// MaxFreeTime The maximum idle time allowed to the client
-	MaxFreeTime = 10 * time.Minute
+	MaxFreeTime = 3 * time.Minute
 )
 
-func init() {
-	// heartbeat check
-	go func() {
-		ticker := time.NewTicker(time.Minute)
-		for {
-			<-ticker.C
+func StartActiveCheck(ctx context.Context) {
+	go common.TimerFunc(func() {
+		now := time.Now()
+		select {
+		case <-ctx.Done():
+			runtime.Goexit()
+		default:
 			log.Debug("heartbeat check...")
-			now := time.Now()
-			for addr, cli := range Clients {
+			for _, cli := range Clients {
 				if cli.lastAcTime.Add(MaxFreeTime).Before(now) {
 					cli.Offline()
-					log.Warn("[%s-%s] The client is not active within 10 minutes, force removal", addr.String(), cli.Name)
+					log.Warn("[%s] The client is not active within 10 minutes, force removal", cli.GetName())
 				}
 			}
 		}
-	}()
+	}).Run(time.Minute)
 }
 
 func RegistClient(c *Client) error {
@@ -43,10 +46,10 @@ func RegistClient(c *Client) error {
 	defer Lock.Unlock()
 
 	if _, f := Clients[c.Internal]; f {
-		return errors.NewError("Unable to add existing client, name: "+c.Internal.String(), nil)
+		return errors.NewError("Unable to add existing client, duplicate internal ip: "+c.Internal.String(), nil)
 	}
 	if _, f := ClientNames[c.Name]; f {
-		return errors.NewError("Unable to add existing client, name: "+c.Name, nil)
+		return errors.NewError("Unable to add existing client, duplicate name: "+c.Name, nil)
 	}
 	Clients[c.Internal] = c
 	ClientNames[c.Name] = c
