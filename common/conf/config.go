@@ -1,19 +1,21 @@
 package conf
 
 import (
-	"github.com/haiyanghan/tiangong/common"
-	"github.com/haiyanghan/tiangong/common/errors"
-	"github.com/haiyanghan/tiangong/common/log"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
 
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/errors"
+	"github.com/haiyanghan/tiangong/common/log"
+
 	"github.com/magiconair/properties"
 )
 
 var (
-	Tag = "prop"
+	PropTag         = "prop"
+	DefaultValueTag = "default"
 )
 
 var getExecPathFunc = func() string {
@@ -25,6 +27,10 @@ var getExecPathFunc = func() string {
 }
 
 type DefaultValueFunc = func(string) string
+
+func EmptyDefaultValueFunc(string) string {
+	return ""
+}
 
 func LoadConfig(input string, config interface{}, defaultProp DefaultValueFunc) error {
 	ptr, ok := common.GetPtr(config)
@@ -51,11 +57,17 @@ func LoadConfig(input string, config interface{}, defaultProp DefaultValueFunc) 
 	}
 	log.Debug("load config:\n%+v", prop.String())
 
+	defaultValueMap := common.GetTags(DefaultValueTag, config)
 	val := ptr.Elem()
-	for fName, tVal := range common.GetTags(Tag, config) {
+	for fName, tVal := range common.GetTags(PropTag, config) {
 		value, ok := prop.Get(tVal)
 		if !ok || common.IsEmpty(value) {
 			value = defaultProp(tVal)
+		}
+		if common.IsEmpty(value) {
+			if v, f := defaultValueMap[fName]; f {
+				value = v
+			}
 		}
 		if common.IsNotEmpty(value) {
 			field := val.FieldByName(fName)

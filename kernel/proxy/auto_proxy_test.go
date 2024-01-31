@@ -24,8 +24,12 @@ func TestHttpPorxy(t *testing.T) {
 		t.Error(err)
 		return
 	}
+	if _, err := proxy.QuerySystemProxy(); err != nil {
+		t.Error(err)
+		return
+	}
 	<-time.NewTimer(20 * time.Second).C
-  	if err := proxy.ResetProxy(); err != nil {
+	if err := proxy.ResetProxy(); err != nil {
 		t.Error(err)
 		return
 	}
@@ -37,9 +41,13 @@ func startTcpServer() {
 	connFunc := func(ctx context.Context, conn net.Conn) error {
 		go func() {
 			buffer := buf.NewRingBuffer()
+			defer buffer.Release()
 			for {
-				if _, err := buffer.Write(conn, buffer.Cap()); err != nil {
+				if n, err := buffer.Write(conn, buffer.Cap()); err != nil {
 					log.Error("read error", err)
+					conn.Close()
+					return
+				} else if n == 0 {
 					conn.Close()
 					return
 				}

@@ -33,7 +33,7 @@
             "mode": "auto",
             "buildFlags": [],
             "program": "${workspaceFolder}/kernel/main",
-            "args": ["-log.level", "DEBUG"],
+            "args": ["-log.level", "DEBUG", "-conf", "${workspaceFolder}/conf/kernel.conf"],
             "dlvFlags": ["--check-go-version=false"]
         }
     ]

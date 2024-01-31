@@ -10,7 +10,6 @@ import (
 )
 
 const (
-
 	//  Options used in INTERNET_PER_CONN_OPTION struct
 	INTERNET_PER_CONN_FLAGS          = 1 // Sets or retrieves the connection type. The Value member will contain one or more of the values from PerConnFlags
 	INTERNET_PER_CONN_PROXY_SERVER   = 2 // Sets or retrieves a string containing the proxy servers.
@@ -27,7 +26,6 @@ const (
 	PROXY_TYPE_PROXY          = 0x00000002 // via named proxy
 	PROXY_TYPE_AUTO_PROXY_URL = 0x00000004 // autoproxy URL
 	PROXY_TYPE_AUTO_DETECT    = 0x00000008 // use autoproxy detection
-
 )
 
 var (
@@ -51,6 +49,17 @@ type INTERNET_PER_CONN_OPTION_LIST struct {
 	dwOptionCount uint32
 	dwOptionError uint32
 	pOptions      uintptr
+}
+
+// INTERNET_PROXY_INFO https://learn.microsoft.com/zh-cn/windows/win32/api/wininet/ns-wininet-internet_proxy_info
+type INTERNET_PROXY_INFO struct {
+	// INTERNET_OPEN_TYPE_DIRECT = 1
+	// INTERNET_OPEN_TYPE_PRECONFIG = 2
+	// INTERNET_OPEN_TYPE_PROXY = 3
+
+	dwAccessType    uint32
+	lpszProxy       *uint16
+	lpszProxyBypass *uint16
 }
 
 func SetProxy(proxy string, ignores []string) error {
@@ -82,22 +91,22 @@ func SetProxy(proxy string, ignores []string) error {
 	return nil
 }
 
-func QuerySystemProxy() error {
+func QuerySystemProxy() (*INTERNET_PROXY_INFO, error) {
 	winInet, err := syscall.LoadLibrary("Wininet.dll")
 
 	if err != nil {
-		return errors.NewError("loadLibrary Wininet.dll error, ", err)
+		return nil, errors.NewError("loadLibrary Wininet.dll error, ", err)
 	}
-	InternetQueryOption, err := syscall.GetProcAddress(winInet, "InternetQueryOption")
+	InternetQueryOption, err := syscall.GetProcAddress(winInet, "InternetQueryOptionW")
 	if err != nil {
-		return errors.NewError("getProcAddress InternetSetOptionW.dll error, ", err)
+		return nil, errors.NewError("getProcAddress InternetSetOptionW.dll error, ", err)
 	}
-	length := 4 * 1024
+	length := 4096
 	buffer := make([]byte, length)
 	if callWindowsFunc(InternetQueryOption, INTERNET_OPTION_PROXY, uintptr(unsafe.Pointer(&buffer[0])), uintptr(unsafe.Pointer(&length))); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return (*INTERNET_PROXY_INFO)(unsafe.Pointer(&buffer[0])), nil
 }
 
 func buildOptions(proxy string, ignores []string) []INTERNET_PER_CONN_OPTION {
