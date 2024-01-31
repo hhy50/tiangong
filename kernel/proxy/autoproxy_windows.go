@@ -55,12 +55,11 @@ type INTERNET_PER_CONN_OPTION_LIST struct {
 
 func SetProxy(proxy string, ignores []string) error {
 	winInet, err := syscall.LoadLibrary("Wininet.dll")
-	defer syscall.Close(winInet)
 
 	if err != nil {
 		return errors.NewError("loadLibrary Wininet.dll error, ", err)
 	}
-	InternetSetOption, err := syscall.GetProcAddress(winInet, "InternetSetOption")
+	InternetSetOption, err := syscall.GetProcAddress(winInet, "InternetSetOptionW")
 	if err != nil {
 		return errors.NewError("getProcAddress InternetSetOptionW.dll error, ", err)
 	}
@@ -85,7 +84,6 @@ func SetProxy(proxy string, ignores []string) error {
 
 func QuerySystemProxy() error {
 	winInet, err := syscall.LoadLibrary("Wininet.dll")
-	defer syscall.Close(winInet)
 
 	if err != nil {
 		return errors.NewError("loadLibrary Wininet.dll error, ", err)
