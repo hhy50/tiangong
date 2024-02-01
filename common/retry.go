@@ -1,7 +1,6 @@
 package common
 
 import (
-	"github.com/haiyanghan/tiangong/common/log"
 	"time"
 )
 
@@ -16,7 +15,6 @@ func (r Retry) Run(interval, timeout time.Duration) {
 	for {
 		<-ticker.C
 		if err := r(); err != nil {
-			log.Error("retry execute error", err)
 			if !always && time.Now().After(to) {
 				break
 			}

@@ -1,15 +1,16 @@
 package protocol
 
 import (
-	"github.com/haiyanghan/tiangong/common/buf"
-	"github.com/haiyanghan/tiangong/common/errors"
 	"io"
 	"strconv"
-	"unsafe"
+
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/errors"
 )
 
 const (
-	PacketHeaderLen = int(unsafe.Sizeof((*PacketHeader)(nil)))
+	PacketHeaderLen = 2 + 4 + 1
 )
 
 type PacketHeader struct {
@@ -22,7 +23,9 @@ func (h *PacketHeader) WriteTo(buffer buf.Buffer) error {
 	if buffer.Cap() < PacketHeaderLen {
 		return errors.NewError("write bytes len too short, minnum is "+strconv.Itoa(PacketHeaderLen)+"bytes", nil)
 	}
-
+	buf.WriteBytes(buffer, common.Uint16ToBytes(h.Len))
+	buf.WriteBytes(buffer, common.Uint32ToBytes(h.Rid))
+	buf.WriteByte(buffer, h.Protocol)
 	return nil
 }
 

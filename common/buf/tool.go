@@ -2,6 +2,7 @@ package buf
 
 import (
 	"encoding/binary"
+
 	"github.com/haiyanghan/tiangong/common"
 )
 
@@ -13,11 +14,6 @@ func WriteBytes(buffer Buffer, b []byte) error {
 	if _, err := buffer.Write(Wrap(b), len(b)); err != nil {
 		return err
 	}
-	return nil
-}
-
-func WriteInt(buffer Buffer, i int) error {
-	// TODO
 	return nil
 }
 

@@ -3,10 +3,11 @@ package client
 import (
 	"context"
 	"fmt"
-	"github.com/haiyanghan/tiangong/common/errors"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/haiyanghan/tiangong/common/errors"
 
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/log"
@@ -62,11 +63,11 @@ func (c *Client) Keepalive() {
 						runtime.Goexit()
 					}
 				default:
-					log.Error("read bytes from client error, ", err)
+					log.Error("Read bytes from client error, ", err)
 					return
 				}
 			}
-			log.Debug("Recive %d bytes from client[%s]", buffer.Len(), c.GetName())
+			log.Debug("Receive %d bytes from client[%s]", buffer.Len(), c.GetName())
 			handlerResponse(buffer)
 		}
 	}
@@ -85,7 +86,7 @@ func (c *Client) Offline() {
 	c.cancel()
 	delete(Clients, c.Internal)
 	delete(ClientNames, c.Name)
-	log.Warn("client[%s-%s] offlined...", c.GetName(), c.Internal.String())
+	log.Warn("Client [%s] is offlined...", c.GetName())
 }
 
 func (c *Client) GetName() string {

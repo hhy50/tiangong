@@ -16,7 +16,8 @@ type WirelessBridging struct {
 	dst *client.Client
 }
 
-func (w *WirelessBridging) Transport(protocol.PacketHeader, buf.Buffer) error {
-	log.Info("aaa")
+func (w *WirelessBridging) Transport(h protocol.PacketHeader, buffer buf.Buffer) error {
+	bytes, _ := buf.ReadAll(buffer)
+	log.Info("[%x]", bytes)
 	return nil
 }

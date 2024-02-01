@@ -25,60 +25,11 @@ var (
 )
 
 type Processor struct {
-	proxyHost string
-	ProxyPort int
-
 	ctx         context.Context
 	client      net.TcpClient
+	proxyServer net.TcpServer
 	incrementer common.Incrementer
-
-	outConn net.Conn
-}
-
-func (p *Processor) GetProxyAddr() string {
-	return fmt.Sprintf("%s:%d", p.proxyHost, p.ProxyPort)
-}
-
-func ConnSuccess(ctx context.Context, conn net.Conn) error {
-	closeFunc := conn.Close
-	// handshake
-	if err := handshake(conn, Config.Token, net.ParseIp(Config.Subhost)); err != nil {
-		_ = closeFunc()
-		return err
-	}
-	log.Info("connect success, target:[%s]", conn.RemoteAddr())
-
-	p := common.GetProcess(ctx).(Processor)
-	p.outConn = conn
-
-	buffer := buf.NewRingBuffer()
-	defer buffer.Release()
-
-	if err := proxy.SetProxy(p.GetProxyAddr(), []string{"192.168.*.*"}); err != nil {
-		log.Warn("ser proxy error, %s", err.Error())
-		return nil
-	}
-
-	go func() {
-		for {
-			n, err := buffer.Write(conn, buffer.Cap())
-			if n == 0 || err != nil {
-				_ = closeFunc()
-				log.Error("connect closed...", err)
-				go common.Retry(func() error {
-					return p.client.Connect(ConnSuccess)
-				}).Run(3*time.Second, -1)
-				runtime.Goexit()
-			}
-			p.WriteToRemote(protocol.HTTP, buffer)
-		}
-	}()
-
-	return nil
-}
-
-func init() {
-
+	outConn     net.Conn
 }
 
 func NewProcessor(cp string) Processor {
@@ -88,10 +39,100 @@ func NewProcessor(cp string) Processor {
 		incrementer: common.Incrementer{Range: common.Range{0, math.MaxUint32}},
 	}
 
-	ctx := common.SetProcess(context.Background(), p)
+	ctx := common.SetProcess(context.Background(), &p)
 	p.ctx = ctx
 	p.client = net.NewTcpClient(Config.ServerHost, Config.ServerPort, ctx)
+	p.proxyServer = net.NewTcpServer(Config.ProxyHost, Config.ProxyPort, ctx)
 	return p
+}
+
+func GetProxyAddr() string {
+	return fmt.Sprintf("%s:%d", Config.ProxyHost, Config.ProxyPort)
+}
+
+func (p *Processor) Start() error {
+	p.proxyServer.ListenTCP(StartListener)
+	if err := p.client.Connect(ConnSuccess); err != nil {
+		log.Warn("Connect targte server error retry...", nil)
+		go common.Retry(func() error {
+			return p.client.Connect(ConnSuccess)
+		}).Run(3*time.Second, -1)
+		return nil
+	}
+
+	return nil
+}
+
+func (p *Processor) WriteToRemote(proto protocol.Protocol, bytes buf.Buffer) error {
+	l := bytes.Len()
+	if l > math.MaxUint16 {
+		return errors.NewError("packet length exceeding maximum limit", nil)
+	}
+	h := protocol.PacketHeader{
+		Len:      uint16(l),
+		Rid:      uint32(p.incrementer.Next()),
+		Protocol: byte(proto),
+	}
+
+	buffer := buf.NewBuffer(protocol.PacketHeaderLen + l)
+	defer buffer.Release()
+
+	// write packet header
+	_ = h.WriteTo(buffer)
+	// write body
+	_, _ = buffer.Write(bytes, l)
+	return p.client.Write(buffer)
+}
+
+func ConnSuccess(ctx context.Context, conn net.Conn) error {
+	closeFunc := conn.Close
+	// handshake
+	if err := handshake(conn, Config.Token, net.ParseIp(Config.Subhost)); err != nil {
+		_ = closeFunc()
+		return err
+	}
+	log.Info("Connect target server success [%s]", conn.RemoteAddr())
+
+	p := common.GetProcess(ctx).(*Processor)
+	p.outConn = conn
+
+	buffer := buf.NewRingBuffer()
+	defer buffer.Release()
+
+	if err := proxy.SetProxy(GetProxyAddr(), []string{"192.168.*.*"}); err != nil {
+		log.Warn("Set systemproxy error, %s", err.Error())
+		return nil
+	}
+
+	return nil
+}
+
+func StartListener(ctx context.Context, conn net.Conn) error {
+	p := ctx.Value(common.ProcessKey).(*Processor)
+
+	go func() {
+		buffer := buf.NewRingBuffer()
+		defer buffer.Release()
+		defer conn.Close()
+
+		for {
+			select {
+			case <-ctx.Done():
+				runtime.Goexit()
+			default:
+				if n, err := buffer.Write(conn, buffer.Cap()); err != nil || n <= 0 {
+					log.Warn("Connect closed, %s", err.Error())
+					return
+				}
+				bytes, _ := buf.ReadAll(buffer)
+				if err := p.WriteToRemote(protocol.TCP, buf.Wrap(bytes)); err != nil {
+					log.Error("Write to remote server error", err)
+				}
+			}
+		}
+	}()
+
+	return nil
 }
 
 func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
@@ -139,36 +180,4 @@ func handshake(conn net.Conn, token string, subHost net.IpAddress) error {
 	}
 
 	return nil
-}
-
-func (p *Processor) Start() error {
-	if err := p.client.Connect(ConnSuccess); err != nil {
-		log.Error("connect tiangong-server error retry..., ", err)
-		go common.Retry(func() error {
-			return p.client.Connect(ConnSuccess)
-		}).Run(3*time.Second, -1)
-		return nil
-	}
-
-	return nil
-}
-
-func (p *Processor) WriteToRemote(proto protocol.Protocol, bytes buf.Buffer) error {
-	l := bytes.Len()
-	if l > math.MaxUint16 {
-		return errors.NewError("packet length exceeding maximum limit", nil)
-	}
-	h := protocol.PacketHeader{
-		Len:      uint16(l),
-		Rid:      uint32(p.incrementer.Next()),
-		Protocol: byte(proto),
-	}
-
-	buffer := buf.NewBuffer(protocol.PacketHeaderLen + l)
-	defer buffer.Release()
-
-	_ = h.WriteTo(buffer)
-	// write body
-	_, _ = buffer.Write(bytes, l)
-	return p.client.Write(buffer)
 }

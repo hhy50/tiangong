@@ -27,7 +27,7 @@ func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Mess
 	}
 	complete := func(status protocol.AuthStatus) {
 		_ = buffer.Clear()
-		log.Debug("write auth response body, status:[%d]", status)
+		log.Debug("Write auth response body, status:[%d]", status)
 		response := protocol.NewAuthResponse(status)
 		if err := response.WriteTo(buffer); err != nil {
 			log.Warn("write to auth response error", err)
@@ -35,14 +35,14 @@ func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Mess
 		}
 
 		if err := conn.ReadFrom(buffer); err != nil {
-			log.Warn("write to auth response error", err)
+			log.Warn("Write to auth response error", err)
 			return
 		}
 	}
 
 	if n, err := buffer.Write(conn, protocol.AuthHeaderLen); err != nil || n != protocol.AuthHeaderLen {
 		return nil, nil, errors.NewError(
-			fmt.Sprintf("read bytes from connect too short, should minnum read %d bytes actual reading %d bytes",
+			fmt.Sprintf("Read bytes from connect too short, should minnum read %d bytes, actual reading %d bytes",
 				protocol.AuthHeaderLen, n), err)
 	}
 

@@ -2,9 +2,10 @@ package client
 
 import (
 	"context"
-	"github.com/haiyanghan/tiangong/common"
 	"runtime"
 	"time"
+
+	"github.com/haiyanghan/tiangong/common"
 
 	"github.com/haiyanghan/tiangong/common/errors"
 	"github.com/haiyanghan/tiangong/common/lock"
@@ -30,11 +31,10 @@ func StartActiveCheck(ctx context.Context) {
 		case <-ctx.Done():
 			runtime.Goexit()
 		default:
-			log.Debug("heartbeat check...")
 			for _, cli := range Clients {
 				if cli.lastAcTime.Add(MaxFreeTime).Before(now) {
 					cli.Offline()
-					log.Warn("[%s] The client is not active within 10 minutes, force removal", cli.GetName())
+					log.Warn("[%s] The client is not active within 3  minutes, force removal", cli.GetName())
 				}
 			}
 		}

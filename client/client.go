@@ -38,7 +38,7 @@ type clientImpl struct {
 func (s *clientImpl) Start() error {
 	if err := s.tcpClient.Connect(handshake); err != nil {
 		go common.OnceTimerFunc(func() {
-			log.Warn("connect target server error [%v], wait retry...", err)
+			log.Warn("Connect target server error, wait retry...")
 			_ = s.Start()
 		}).Run(10 * time.Second)
 		return nil
@@ -64,7 +64,7 @@ func heartbeat(tcpClient net.TcpClient) {
 
 	_ = body.WriteTo(buffer)
 	if err := tcpClient.Write(buffer); err != nil {
-		log.Error("send heartbeat packet error, ", err)
+		log.Error("Send heartbeat packet error, ", err)
 
 		if strings.Contains(err.Error(), "closed") {
 			tcpClient.Disconnect()
@@ -72,7 +72,7 @@ func heartbeat(tcpClient net.TcpClient) {
 		}
 		return
 	}
-	log.Debug("send heartbeat packet success")
+	log.Debug("Send heartbeat packet success")
 }
 
 func handshake(ctx context.Context, conn net.Conn) error {
@@ -126,8 +126,8 @@ func handshake(ctx context.Context, conn net.Conn) error {
 		return errors.NewError("SetWriteDeadline error", err)
 	}
 
-	log.Info("connect target server [%s] seuccess", conn.RemoteAddr().String())
-	log.Info("handshake success")
+	log.Info("Connect target server [%s] seuccess", conn.RemoteAddr().String())
+	log.Info("Handshake success")
 	return nil
 }
 

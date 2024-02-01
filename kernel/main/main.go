@@ -22,7 +22,7 @@ func main() {
 
 	processor := NewProcessor(cp)
 	if err := processor.Start(); err != nil {
-		log.Error("kernel start error, ", err)
+		log.Error("Kernel client start error, ", err)
 		return
 	}
 

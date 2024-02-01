@@ -27,7 +27,6 @@ type tcpServerImpl struct {
 
 	listener net.Listener
 	ctx      context.Context
-	status   int
 }
 
 func (s *tcpServerImpl) ListenTCP(handler ConnHandlerFunc) error {
@@ -42,7 +41,7 @@ func (s *tcpServerImpl) ListenTCP(handler ConnHandlerFunc) error {
 	if err != nil {
 		return err
 	}
-	log.Info("%s Listen Host: %s, port: %d", logPrefix, s.Host, s.Port)
+	log.Info("%s listen at host: %s, port: %d", logPrefix, s.Host, s.Port)
 	go listenConnect(s, handler)
 	return nil
 }

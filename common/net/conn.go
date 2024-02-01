@@ -1,9 +1,10 @@
 package net
 
 import (
+	"net"
+
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/log"
-	"net"
 )
 
 type Conn interface {
@@ -25,7 +26,7 @@ func (c ConnWrap) ReadFrom(buffer buf.Buffer) error {
 	if err != nil {
 		return err
 	}
-	log.Debug("write bytes [%x] --> [%s]", bytes, c.Name())
+	log.Debug("Write %d size bytes [%x] --> [%s]", len(bytes), bytes, c.Name())
 	if _, err = c.Write(bytes); err != nil {
 		return err
 	}

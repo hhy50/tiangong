@@ -2,12 +2,14 @@ package session
 
 import (
 	"context"
+	"runtime"
+	"strings"
+	"time"
+
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/common/net"
 	"github.com/haiyanghan/tiangong/transport/protocol"
-	"runtime"
-	"time"
 )
 
 type Session struct {
@@ -29,17 +31,22 @@ type Session struct {
 // +----+------+----------+
 func (s *Session) Work() {
 	defer s.Close()
-	select {
-	case <-s.Ctx.Done():
-		runtime.Goexit()
-	default:
-		if err := s.conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
-			log.Error("SetDeadline error", err)
-			return
-		}
-		if err := s.HandlePacket(); err != nil {
-			log.Error("HandlePacket error, ", err)
-			return
+	for {
+		select {
+		case <-s.Ctx.Done():
+			runtime.Goexit()
+		default:
+			if err := s.conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
+				log.Error("SetDeadline error", err)
+				return
+			}
+			if err := s.HandlePacket(); err != nil {
+				if strings.Contains(err.Error(), "timeout") {
+					continue
+				}
+				log.Warn("HandlePacket error, %v", err)
+				return
+			}
 		}
 	}
 }
@@ -56,13 +63,17 @@ func (s *Session) HandlePacket() error {
 	}
 	header := protocol.PacketHeader{}
 	if err := header.ReadFrom(s.buffer); err != nil {
-		s.Close()
+		return err
+	}
+	if header.Len == 0 {
+		return nil
 	}
 	log.Debug("Receive packet header, protocol:%s, rid:%d, len:%d", protocol.Protocol(header.Protocol).String(), header.Rid, header.Len)
 	if n, err := s.buffer.Write(s.conn, int(header.Len)); err != nil || n != int(header.Len) {
 		// discard
+		discard(s.conn, int(header.Len)-n)
 		_ = s.buffer.Clear()
-		log.Warn("Discard packet, len:%d, error:%+v", n, err)
+
 		return nil
 	}
 
@@ -70,4 +81,13 @@ func (s *Session) HandlePacket() error {
 		return err
 	}
 	return nil
+}
+
+func discard(conn net.Conn, len int) {
+	discard := buf.NewBuffer(len)
+	discard.Write(conn, len)
+	discard.Release()
+
+	log.Warn("Discard packet, len:%d", len)
+
 }

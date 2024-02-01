@@ -35,27 +35,25 @@ func EmptyDefaultValueFunc(string) string {
 func LoadConfig(input string, config interface{}, defaultProp DefaultValueFunc) error {
 	ptr, ok := common.GetPtr(config)
 	if !ok {
-		return errors.NewError("param 'config' must be a pointer", nil)
+		return errors.NewError("Param 'config' must be a pointer", nil)
 	}
 	if common.IsEmpty(input) {
-		return errors.NewError("useage: -conf {path} to specify the configuration file", nil)
+		return errors.NewError("Useage: -conf {path} to specify the configuration file", nil)
 	}
 
 	if !common.FileExist(input) && !filepath.IsAbs(input) {
 		cur := getExecPathFunc()
-		log.Debug("find conf file dir: %s", cur)
-
 		input = filepath.Join(cur, input)
 	}
 	if !common.FileExist(input) {
-		return errors.NewError("config file not found!", nil)
+		return errors.NewError("Config file not found!", nil)
 	}
 
 	prop, err := properties.LoadFile(input, properties.UTF8)
 	if err != nil {
 		return err
 	}
-	log.Debug("load config:\n%+v", prop.String())
+	log.Debug("Load config:\n%+v", prop.String())
 
 	defaultValueMap := common.GetTags(DefaultValueTag, config)
 	val := ptr.Elem()

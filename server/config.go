@@ -57,7 +57,7 @@ func defaultValue(key string) string {
 		return UserNameDef.Second
 	case PasswdDef.First:
 		passwd := uuid.New().String()
-		log.Warn("httpPasswd is not set, Generate a random password: %s", passwd)
+		log.Warn("HttpPasswd is not set, Generate a random password: %s", passwd)
 		return passwd
 	default:
 		return ""

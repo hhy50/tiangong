@@ -44,7 +44,6 @@ func startTcpServer() {
 			defer buffer.Release()
 			for {
 				if n, err := buffer.Write(conn, buffer.Cap()); err != nil {
-					log.Error("read error", err)
 					conn.Close()
 					return
 				} else if n == 0 {
@@ -52,7 +51,7 @@ func startTcpServer() {
 					return
 				}
 				bytes, _ := buf.ReadAll(buffer)
-				log.Info("Rec %d byes, [%s]", len(bytes), bytes)
+				log.Info("Receive %d byes, [%s]", len(bytes), bytes)
 			}
 		}()
 		return nil

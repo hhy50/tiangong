@@ -1,11 +1,11 @@
 package buf
 
 import (
-	"github.com/haiyanghan/tiangong/common"
-	"github.com/haiyanghan/tiangong/common/errors"
-	"github.com/haiyanghan/tiangong/common/lock"
 	"io"
 	"sync"
+
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/lock"
 )
 
 type ByteBuffer struct {
@@ -44,7 +44,7 @@ func (b *ByteBuffer) Write(reader io.Reader, size int) (int, error) {
 		b.end += n
 		return n, err
 	}
-	return 0, errors.NewError("current buffer Unable to write, no space", nil)
+	return 0, NoSpace
 }
 
 func (b *ByteBuffer) Len() int {

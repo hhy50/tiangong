@@ -53,7 +53,7 @@ func Uint32ToBytes(i uint32) []byte {
 }
 
 func Uint16ToBytes(i uint16) []byte {
-	bytes := make([]byte, 4)
+	bytes := make([]byte, 2)
 	binary.BigEndian.PutUint16(bytes, i)
 	return bytes
 }
