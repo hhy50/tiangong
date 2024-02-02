@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/haiyanghan/tiangong"
@@ -38,7 +37,7 @@ type clientImpl struct {
 func (s *clientImpl) Start() error {
 	if err := s.tcpClient.Connect(handshake); err != nil {
 		go common.OnceTimerFunc(func() {
-			log.Warn("Connect target server error, wait retry...")
+			log.Warn("Connect to target server error, wait retry...")
 			_ = s.Start()
 		}).Run(10 * time.Second)
 		return nil
@@ -54,6 +53,10 @@ func (s *clientImpl) Stop() {
 }
 
 func heartbeat(tcpClient net.TcpClient) {
+	if !tcpClient.IsConnected() {
+		reconnect(tcpClient)
+		return
+	}
 	body := protocol.ClientMessageBody{
 		Type:      Heartbeat,
 		Timestamp: uint64(time.Now().UnixMilli()),
@@ -65,11 +68,8 @@ func heartbeat(tcpClient net.TcpClient) {
 	_ = body.WriteTo(buffer)
 	if err := tcpClient.Write(buffer); err != nil {
 		log.Error("Send heartbeat packet error, ", err)
-
-		if strings.Contains(err.Error(), "closed") {
-			tcpClient.Disconnect()
-			tcpClient.Connect(handshake)
-		}
+		tcpClient.Disconnect()
+		reconnect(tcpClient)
 		return
 	}
 	log.Debug("Send heartbeat packet success")
@@ -126,9 +126,18 @@ func handshake(ctx context.Context, conn net.Conn) error {
 		return errors.NewError("SetWriteDeadline error", err)
 	}
 
-	log.Info("Connect target server [%s] seuccess", conn.RemoteAddr().String())
+	log.Info("Connect to target server [%s] seuccess", conn.RemoteAddr().String())
 	log.Info("Handshake success")
 	return nil
+}
+
+func reconnect(tcpClient net.TcpClient) {
+	err := tcpClient.Connect(handshake)
+	if err != nil {
+		log.Warn("Reconnect to target server error, %s", err.Error())
+		return
+	}
+	log.Info("Reconnect to target server success.")
 }
 
 // NewClient by specify a config file

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/haiyanghan/tiangong/common/errors"
@@ -54,19 +53,13 @@ func (c *Client) Keepalive() {
 			runtime.Goexit()
 		default:
 			if err := c.Read(buffer); err != nil {
-				switch err.(type) {
-				case *net.OpError:
-					if strings.Contains(err.Error(), "timeout") {
-						continue
-					}
-					if strings.Contains(err.Error(), "closed") {
-						runtime.Goexit()
-					}
-				default:
-					log.Error("Read bytes from client error, ", err)
-					return
+				if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
+					continue
+				} else {
+					runtime.Goexit()
 				}
 			}
+			c.lastAcTime = time.Now()
 			log.Debug("Receive %d bytes from client[%s]", buffer.Len(), c.GetName())
 			handlerResponse(buffer)
 		}

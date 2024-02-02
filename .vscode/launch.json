@@ -31,7 +31,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "buildFlags": [],
+            "buildFlags": ["-tags", "debug"],
             "program": "${workspaceFolder}/kernel/main",
             "args": ["-log.level", "DEBUG", "-conf", "${workspaceFolder}/conf/kernel.conf"],
             "dlvFlags": ["--check-go-version=false"]

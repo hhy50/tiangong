@@ -13,7 +13,6 @@ func (r Retry) Run(interval, timeout time.Duration) {
 	defer ticker.Stop()
 
 	for {
-		<-ticker.C
 		if err := r(); err != nil {
 			if !always && time.Now().After(to) {
 				break
@@ -21,5 +20,6 @@ func (r Retry) Run(interval, timeout time.Duration) {
 		} else {
 			break
 		}
+		<-ticker.C
 	}
 }

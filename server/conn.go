@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"reflect"
+
 	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/net"
 	"github.com/haiyanghan/tiangong/server/auth"
@@ -11,6 +13,10 @@ import (
 	"github.com/haiyanghan/tiangong/transport/protocol"
 
 	"github.com/google/uuid"
+)
+
+var (
+	NoAlloc = net.IpAddress{0, 0, 0, 0}
 )
 
 type Cli = *protocol.ClientAuth
@@ -33,7 +39,6 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 		c := buildClient(ctx, conn, cli)
 		_ = client.RegistClient(&c)
 		runner = ListenFunc(c.Keepalive)
-		break
 	case Session:
 		subHost := net.ValueOf((user.(Session)).SubHost)
 		s := session.NewSession(subHost, (user.(Session)).Token, conn, ctx)
@@ -41,7 +46,6 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 			return err
 		}
 		runner = ListenFunc(s.Work)
-		break
 	}
 
 	go runner.Run()
@@ -50,7 +54,7 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 
 func buildClient(ctx context.Context, conn net.Conn, cli Cli) client.Client {
 	getInternalIpFromReq := func() net.IpAddress {
-		if len(cli.Internal) == 4 {
+		if len(cli.Internal) == 4 && reflect.DeepEqual(cli.Internal, NoAlloc) {
 			i := cli.Internal
 			return net.IpAddress{i[0], i[1], i[2], i[3]}
 		}

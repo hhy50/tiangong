@@ -2,7 +2,6 @@ package session
 
 import (
 	"github.com/haiyanghan/tiangong/common/buf"
-	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/server/client"
 	"github.com/haiyanghan/tiangong/transport/protocol"
 )
@@ -17,7 +16,7 @@ type WirelessBridging struct {
 }
 
 func (w *WirelessBridging) Transport(h protocol.PacketHeader, buffer buf.Buffer) error {
-	bytes, _ := buf.ReadAll(buffer)
-	log.Info("[%x]", bytes)
+	_, _ = buf.ReadAll(buffer)
+	// log.Info("[%s]", bytes)
 	return nil
 }

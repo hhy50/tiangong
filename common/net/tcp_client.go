@@ -19,6 +19,7 @@ var (
 type TcpClient interface {
 	Connect(handlerFunc ConnHandlerFunc) error
 	Disconnect() error
+	IsConnected() bool
 	Write(buffer buf.Buffer) error
 }
 
@@ -58,6 +59,11 @@ func (t *tcpClientImpl) Write(buffer buf.Buffer) error {
 		return nil
 	}
 	return errors.NewError("connect closed", nil)
+}
+
+func (t *tcpClientImpl) IsConnected() bool {
+
+	return t.conn != nil
 }
 
 func (t *tcpClientImpl) Disconnect() error {

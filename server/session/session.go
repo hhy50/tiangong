@@ -3,7 +3,6 @@ package session
 import (
 	"context"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/haiyanghan/tiangong/common/buf"
@@ -41,7 +40,7 @@ func (s *Session) Work() {
 				return
 			}
 			if err := s.HandlePacket(); err != nil {
-				if strings.Contains(err.Error(), "timeout") {
+				if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 					continue
 				}
 				log.Warn("HandlePacket error, %v", err)
@@ -73,7 +72,6 @@ func (s *Session) HandlePacket() error {
 		// discard
 		discard(s.conn, int(header.Len)-n)
 		_ = s.buffer.Clear()
-
 		return nil
 	}
 

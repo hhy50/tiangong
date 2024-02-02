@@ -2,7 +2,9 @@ package session
 
 import (
 	"context"
+
 	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/common/net"
 	"github.com/haiyanghan/tiangong/server/client"
 )
@@ -11,6 +13,7 @@ var sessions []*Session = make([]*Session, 128)
 
 func AddSession(session *Session) error {
 	sessions = append(sessions, session)
+	log.Info("New session connected. token=%s, subHost=%s", session.Token, session.SubHost)
 	return nil
 }
 

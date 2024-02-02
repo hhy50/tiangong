@@ -53,6 +53,7 @@ func RegistClient(c *Client) error {
 	}
 	Clients[c.Internal] = c
 	ClientNames[c.Name] = c
+	log.Info("New client join. name: [%s], internal:[%s]", c.Name, c.Internal.String())
 	return nil
 }
 
