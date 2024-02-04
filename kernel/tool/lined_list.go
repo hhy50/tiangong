@@ -1,4 +1,4 @@
-package main
+package tool
 
 import "github.com/haiyanghan/tiangong/common/lock"
 
@@ -18,7 +18,7 @@ func (l *LinkedList) Pop() interface{} {
 
 	if !l.Empty() {
 		res := l.head.next
-		l.head = res.next
+		l.head.next = res.next
 		return res.val
 	}
 	return nil

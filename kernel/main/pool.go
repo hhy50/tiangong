@@ -8,19 +8,22 @@ import (
 
 	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/errors"
+	"github.com/haiyanghan/tiangong/common/lock"
 	"github.com/haiyanghan/tiangong/common/net"
+	"github.com/haiyanghan/tiangong/kernel/tool"
 )
 
-const maxConnect = 5
+const maxConnect = 1
 
 var (
 	// free list
-	freeList = &LinkedList{}
+	freeList = &tool.LinkedList{}
 	// not active
-	noActiveList = &LinkedList{}
+	noActiveList = &tool.LinkedList{}
 
 	//
 	notifyGroup = []func(){}
+	nLock       = lock.NewLock()
 
 	incrementer        = common.Incrementer{Range: common.Range{0, math.MaxUint32}}
 	reourceCount int32 = 0
@@ -79,7 +82,10 @@ func PutResource(res *Resource) {
 	if res != nil {
 		freeList.Put(res)
 		// notify first
-		for len(notifyGroup) > 0 {
+		nLock.Lock()
+		defer nLock.Unlock()
+
+		for len(notifyGroup) > 0 && !freeList.Empty() {
 			notifyGroup[0]()
 			notifyGroup = notifyGroup[1:]
 		}
@@ -87,6 +93,9 @@ func PutResource(res *Resource) {
 }
 
 func JoinNotifyGooup(timeout time.Duration) context.Context {
+	nLock.Lock()
+	defer nLock.Unlock()
+
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	notifyGroup = append(notifyGroup, cancel)
 	return ctx
