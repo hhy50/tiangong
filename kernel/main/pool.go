@@ -13,7 +13,7 @@ import (
 	"github.com/haiyanghan/tiangong/kernel/tool"
 )
 
-const maxConnect = 1
+const maxConnect = 5
 
 var (
 	// free list

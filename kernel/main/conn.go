@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/haiyanghan/tiangong"

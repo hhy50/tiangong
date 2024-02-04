@@ -28,7 +28,9 @@ func main() {
 	flag.Parse()
 	log.InitLog()
 
-	conf.LoadConfig(cp, &Config, conf.EmptyDefaultValueFunc)
+	if err := conf.LoadConfig(cp, &Config, conf.EmptyDefaultValueFunc); err != nil {
+		panic(err)
+	}
 
 	proxyServer := net.NewTcpServer(Config.ProxyHost, Config.ProxyPort, context.Background())
 	proxyServer.ListenTCP(StartListener)

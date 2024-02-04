@@ -70,6 +70,7 @@ func (b *RingBuffer) Write(reader io.Reader, size int) (int, error) {
 
 	offset, l := func() (int, int) {
 		if b.offset_r == b.offset_w {
+			b.offset_r, b.offset_w = 0, 0
 			return 0, b.len
 		}
 		if (b.offset_w-b.offset_r)&(b.len-1) == 0 {
