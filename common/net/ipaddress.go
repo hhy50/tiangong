@@ -22,6 +22,7 @@ var (
 func init() {
 	// TODO
 	// Get Internal ip From
+	// net.Dial()
 }
 
 // Port Range 1024~65535

@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"runtime"
 	"time"
 
 	"github.com/haiyanghan/tiangong/common"
@@ -24,18 +23,16 @@ var (
 	MaxFreeTime = 3 * time.Minute
 )
 
-func StartActiveCheck(ctx context.Context) {
+func init() {
+	StartActiveCheck()
+}
+
+func StartActiveCheck() {
 	go common.TimerFunc(func() {
-		now := time.Now()
-		select {
-		case <-ctx.Done():
-			runtime.Goexit()
-		default:
-			for _, cli := range Clients {
-				if cli.lastAcTime.Add(MaxFreeTime).Before(now) {
-					cli.Offline()
-					log.Warn("[%s] The client is not active within 3  minutes, force removal", cli.GetName())
-				}
+		for _, cli := range Clients {
+			if cli.lastAcTime.Add(MaxFreeTime).Before(now) {
+				cli.Offline()
+				log.Warn("[%s] The client is not active within 3  minutes, force removal", cli.GetName())
 			}
 		}
 	}).Run(time.Minute)

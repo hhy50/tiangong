@@ -18,6 +18,6 @@ type WirelessBridging struct {
 
 func (w *WirelessBridging) Transport(h protocol.PacketHeader, buffer buf.Buffer) error {
 	bytes, _ := buf.ReadAll(buffer)
-	log.Info("[%x]", bytes)
+	log.Info("[%s]", bytes)
 	return nil
 }

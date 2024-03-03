@@ -41,7 +41,6 @@ func (s *tgServer) Start() error {
 	if err := s.TcpSrv.ListenTCP(connHandler); err != nil {
 		return err
 	}
-	client.StartActiveCheck(s.Ctx)
 	s.status = Running
 	return nil
 }

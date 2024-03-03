@@ -87,5 +87,4 @@ func discard(conn net.Conn, len int) {
 	discard.Release()
 
 	log.Warn("Discard packet, len:%d", len)
-
 }
