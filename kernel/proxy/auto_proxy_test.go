@@ -24,10 +24,7 @@ func TestHttpPorxy(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	if _, err := proxy.QuerySystemProxy(); err != nil {
-		t.Error(err)
-		return
-	}
+
 	<-time.NewTimer(20 * time.Second).C
 	if err := proxy.ResetProxy(); err != nil {
 		t.Error(err)

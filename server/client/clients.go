@@ -30,6 +30,7 @@ func init() {
 func StartActiveCheck() {
 	go common.TimerFunc(func() {
 		for _, cli := range Clients {
+			now := time.Now()
 			if cli.lastAcTime.Add(MaxFreeTime).Before(now) {
 				cli.Offline()
 				log.Warn("[%s] The client is not active within 3  minutes, force removal", cli.GetName())

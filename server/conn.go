@@ -37,7 +37,9 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 	case Cli:
 		cli := user.(Cli)
 		c := buildClient(ctx, conn, cli)
-		_ = client.RegistClient(&c)
+		if err := client.RegistClient(&c); err != nil {
+			return err
+		}
 		runner = ListenFunc(c.Keepalive)
 	case Session:
 		subHost := net.ValueOf((user.(Session)).SubHost)
