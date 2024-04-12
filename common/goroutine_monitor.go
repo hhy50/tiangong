@@ -15,5 +15,5 @@ func init() {
 
 		monitor := "The number of active goroutine in the program: %d, detail: \n %s"
 		log.Debug(monitor, runtime.NumGoroutine(), string(buf[:length]))
-	}).Run(100 * time.Second)
+	}).Run(60 * time.Second)
 }

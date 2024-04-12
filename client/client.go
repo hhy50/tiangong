@@ -53,7 +53,7 @@ func (s *clientImpl) Stop() {
 }
 
 func heartbeat(tcpClient net.TcpClient) {
-	if !tcpClient.IsConnected() {
+	if !tcpClient.Connected() {
 		reconnect(tcpClient)
 		return
 	}

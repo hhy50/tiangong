@@ -56,7 +56,7 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 
 func buildClient(ctx context.Context, conn net.Conn, cli Cli) client.Client {
 	getInternalIpFromReq := func() net.IpAddress {
-		if len(cli.Internal) == 4 && reflect.DeepEqual(cli.Internal, NoAlloc) {
+		if len(cli.Internal) == 4 || reflect.DeepEqual(cli.Internal, NoAlloc) {
 			i := cli.Internal
 			return net.IpAddress{i[0], i[1], i[2], i[3]}
 		}
