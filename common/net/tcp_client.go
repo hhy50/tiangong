@@ -81,3 +81,12 @@ func NewTcpClient(host string, port int, ctx context.Context) TcpClient {
 		ctx:     ctx,
 	}
 }
+
+func NewHttpClient(host string, port ) TcpClient {
+	return &tcpClientImpl{
+		Host:    host,
+		Port:    Port(port),
+		Timeout: DefaultConnTimeout,
+		ctx:     ctx,
+	}
+}
