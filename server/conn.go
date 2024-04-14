@@ -42,7 +42,7 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 		}
 		runner = ListenFunc(c.Keepalive)
 	case Session:
-		subHost := net.ValueOf((user.(Session)).SubHost)
+		subHost := net.ParseFromBytes((user.(Session)).SubHost)
 		s := session.NewSession(subHost, (user.(Session)).Token, conn, ctx)
 		if err = session.AddSession(&s); err != nil {
 			return err

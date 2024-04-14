@@ -54,7 +54,11 @@ func ReadUint64(buffer Buffer) (uint64, error) {
 }
 
 func ReadAll(buffer Buffer) ([]byte, error) {
-	bytes := make([]byte, buffer.Len())
+	return ReadBytes(buffer, buffer.Len())
+}
+
+func ReadBytes(buffer Buffer, len int) ([]byte, error) {
+	bytes := make([]byte, len)
 	if n, err := buffer.Read(bytes); err != nil {
 		return nil, err
 	} else {

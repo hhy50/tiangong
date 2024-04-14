@@ -74,7 +74,7 @@ func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Mess
 			complete(protocol.AuthFail)
 			return nil, nil, errors.NewError("Auth fail, client key not match", nil)
 		}
-		log.Info("Client auth success. name: [%s], internal:[%s]", clientAuth.Name, net.ValueOf(clientAuth.Internal).String())
+		log.Info("Client auth success. name: [%s], internal:[%s]", clientAuth.Name, net.ParseFromBytes(clientAuth.Internal).String())
 	case *protocol.SessionAuth:
 		sessionAuth := body.(*protocol.SessionAuth)
 		if err := Verification(sessionAuth.Token); err != nil {

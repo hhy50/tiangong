@@ -86,7 +86,7 @@ func handshake(ctx context.Context, conn net.Conn) error {
 	{
 		authBody := protocol.ClientAuth{
 			Name:     ClientCnf.Name,
-			Internal: net.ParseIp(ClientCnf.Internal).Bytes(),
+			Internal: net.ParseFromStr(ClientCnf.Internal).Bytes(),
 			Flag:     0,
 			Key:      ClientCnf.Key,
 		}

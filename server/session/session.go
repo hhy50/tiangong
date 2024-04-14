@@ -21,13 +21,13 @@ type Session struct {
 	bridge Bridge
 }
 
-// +----+------+----------+
-// | 	PacketHeader      |
-// +----+------+----------+
-// |Len | Rid  |  Protol  |
-// +----+------+----------+
-// | 2  |  4   | 	1     |
-// +----+------+----------+
+// +----+-----+--------+---------+------+----------+--------+
+// |					  PacketHeader (20 byte)
+// +----+-----+--------+------+------+----------+--------+
+// |Len | Rid | Protol | Host | Port | Reserved | Status |
+// +----+-----+--------+------+------+----------+--------+
+// | 2  |  4  |   1    |  4   |   2  |	  6	    |   1    |
+// +----+-----+--------+------+------+----------+--------+
 func (s *Session) Work() {
 	defer s.Close()
 	for {
@@ -68,13 +68,12 @@ func (s *Session) HandlePacket() error {
 		return nil
 	}
 	log.Debug("Receive packet header, protocol:%s, rid:%d, len:%d", protocol.Protocol(header.Protocol).String(), header.Rid, header.Len)
-	if n, err := s.buffer.Write(s.conn, int(header.Len)); err != nil || n != int(header.Len) {
-		// discard
-		discard(s.conn, int(header.Len)-n)
-		_ = s.buffer.Clear()
-		return nil
-	}
-
+	// if n, err := s.buffer.Write(s.conn, int(header.Len)); err != nil || n != int(header.Len) {
+	// 	// discard
+	// 	discard(s.conn, int(header.Len)-n)
+	// 	_ = s.buffer.Clear()
+	// 	return nil
+	// }
 	if err := s.bridge.Transport(header, s.buffer); err != nil {
 		return err
 	}

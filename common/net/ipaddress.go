@@ -56,13 +56,13 @@ func (p Port) String() string {
 	return strconv.Itoa(int(p))
 }
 
-func ValueOf(bytes []byte) IpAddress {
+func ParseFromBytes(bytes []byte) IpAddress {
 	ip := IpAddress{}
 	copy(ip[:], bytes[:net.IPv4len])
 	return ip
 }
 
-func ParseIp(parse string) IpAddress {
+func ParseFromStr(parse string) IpAddress {
 	split := strings.Split(parse, ".")
 	if len(split) == net.IPv4len {
 		a, _ := strconv.Atoi(split[0])
