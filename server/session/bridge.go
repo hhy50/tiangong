@@ -39,7 +39,6 @@ func (w *WirelessBridging) Transport(h protocol.PacketHeader, buffer buf.Buffer)
 		return err
 	}
 
-
 	httpResp, err = HTTP_CLIENT.Do(httpReq)
 	if err != nil {
 		return err
