@@ -83,7 +83,7 @@ func (h *AuthHeader) WriteTo(buffer buf.Buffer) error {
 }
 
 func DecodeAuthHeader(buffer buf.Buffer, header *AuthHeader) error {
-	if buffer.Cap() < AuthHeaderLen {
+	if buffer.Len() < AuthHeaderLen {
 		return io.EOF
 	}
 

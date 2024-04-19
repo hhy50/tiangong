@@ -2,7 +2,6 @@ package buf
 
 import (
 	"io"
-	"sync"
 
 	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/lock"
@@ -15,7 +14,6 @@ type ByteBuffer struct {
 	len   int
 
 	lock lock.Rwlock
-	once sync.Once
 }
 
 func (b *ByteBuffer) Read(buff []byte) (int, error) {
@@ -23,10 +21,10 @@ func (b *ByteBuffer) Read(buff []byte) (int, error) {
 	defer b.lock.RUnlock()
 
 	if b.start < b.end {
-		l := common.Min(len(buff), b.Len())
-		copy(buff[:l], b.bytes[b.start:b.start+l])
-		b.start += l
-		return l, nil
+		ln := common.Min(len(buff), b.end-b.start)
+		copy(buff[:ln], b.bytes[b.start:b.start+ln])
+		b.start += ln
+		return ln, nil
 	}
 	return 0, nil
 }
@@ -36,8 +34,7 @@ func (b *ByteBuffer) Write(reader io.Reader, size int) (int, error) {
 	defer b.lock.Unlock()
 
 	if b.end < b.len {
-		l := b.len - b.end
-		if l < size {
+		if b.end+size > b.len {
 			return 0, NoSpace
 		}
 		n, err := reader.Read(b.bytes[b.end : b.end+size])

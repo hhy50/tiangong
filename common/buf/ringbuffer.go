@@ -1,10 +1,10 @@
 package buf
 
 import (
+	"io"
+
 	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/lock"
-	"io"
-	"sync"
 )
 
 // RingBuffer is an implementation of Buffer using a ring buffer.
@@ -15,7 +15,6 @@ type RingBuffer struct {
 	offset_w int
 	offset_r int
 	lock     lock.Rwlock
-	once     sync.Once
 }
 
 func (b *RingBuffer) Clear() error {
@@ -27,10 +26,8 @@ func (b *RingBuffer) Clear() error {
 }
 
 func (b *RingBuffer) Release() {
-	b.once.Do(func() {
-		b.Clear()
-		b.buffer = nil
-	})
+	b.Clear()
+	b.buffer = nil
 }
 
 // Read reads data from the channel into the specified buffer.
@@ -39,15 +36,11 @@ func (b *RingBuffer) Read(buf []byte) (int, error) {
 	defer b.lock.RUnlock()
 
 	if b.offset_r < b.offset_w {
-		l := len(buf)
-		off := 0
-
 		// Calculate relative offset
 		r := b.offset_r & (b.len - 1)
-		// w = b.offset_w & (b.len - 1)
-
+		off := 0
 		// Determine the length to read
-		rl := common.Min(b.offset_w-b.offset_r, l)
+		rl := common.Min(b.offset_w-b.offset_r, len(buf))
 		for off < rl {
 			cr := common.Min(rl, b.len-r)
 			copy(buf[off:], b.buffer[r:r+cr])
