@@ -3,15 +3,23 @@ package client
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"runtime"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/errors"
+	"github.com/haiyanghan/tiangong/server/internal"
 
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/common/net"
 	"github.com/haiyanghan/tiangong/transport/protocol"
+)
+
+var (
+	NoAlloc = []byte{0, 0, 0, 0}
 )
 
 type Client struct {
@@ -84,4 +92,21 @@ func (c *Client) Offline() {
 
 func (c *Client) GetName() string {
 	return fmt.Sprintf("%s-%s", c.Name, c.Internal.String())
+}
+
+func buildClient(ctx context.Context, conn net.Conn, cli *protocol.ClientAuth) Client {
+	getInternalIpFromReq := func() net.IpAddress {
+		if len(cli.Internal) == 4 || reflect.DeepEqual(cli.Internal, NoAlloc) {
+			i := cli.Internal
+			return net.IpAddress{i[0], i[1], i[2], i[3]}
+		}
+		return internal.GeneraInternalIp()
+	}
+
+	internalIP := getInternalIpFromReq()
+	if common.IsEmpty(cli.Name) {
+		uid, _ := uuid.NewUUID()
+		cli.Name = uid.String()
+	}
+	return NewClient(ctx, internalIP, cli, conn)
 }

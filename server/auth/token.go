@@ -1,5 +1,6 @@
 package auth
 
-func Verification(token string) error {
+
+func VerificationToken(token string) error {
 	return nil
 }

@@ -3,6 +3,8 @@ package client
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/haiyanghan/tiangong"
@@ -140,9 +142,9 @@ func reconnect(tcpClient net.TcpClient) {
 	log.Info("Reconnect to target server success.")
 }
 
-// NewClient by specify a config file
-func NewClient(cp string) (Client, error) {
-	if err := conf.LoadConfig(cp, &ClientCnf, defaultValue); err != nil {
+// NewClient
+func NewClient() (Client, error) {
+	if err := conf.LoadConfig("", &ClientCnf); err != nil {
 		return nil, err
 	}
 
@@ -153,8 +155,11 @@ func NewClient(cp string) (Client, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = context.WithValue(ctx, common.CancelFuncKey, cancel)
 
+	serverAddr := strings.Split(ClientCnf.Address, ":")
+	serverPort, _ := strconv.Atoi(serverAddr[1])
+
 	return &clientImpl{
 		ctx:       ctx,
-		tcpClient: net.NewTcpClient(ClientCnf.ServerHost, ClientCnf.ServerPort, ctx),
+		tcpClient: net.NewTcpClient(serverAddr[0], serverPort, ctx),
 	}, nil
 }

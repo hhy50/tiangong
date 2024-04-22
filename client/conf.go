@@ -6,25 +6,20 @@ import (
 )
 
 type Config struct {
-	ServerHost string `prop:"serverHost"`
-	ServerPort int    `prop:"serverPort"`
-	Key        string `prop:"key"`
-	Name       string `prop:"name"`
-	Internal   string `prop:"internal"`
-	Export     string `prop:"export"`
+	Address  string `prop:"server.address"`
+	Key      string `prop:"server.key"`
+	Internal string `prop:"server.internal"`
+	Name     string `prop:"main.name"`
+	Export   string `prop:"main.export"`
 }
 
 func (c Config) Require() error {
-	if common.IsEmpty(c.ServerHost) {
-		return errors.NewError("serverHost not be null", nil)
-	}
-
-	if c.ServerPort == 0 {
-		return errors.NewError("serverPort not be null", nil)
+	if common.IsEmpty(c.Address) {
+		return errors.NewError("server.address not be null", nil)
 	}
 
 	if common.IsEmpty(c.Key) {
-		return errors.NewError("server Key not be null", nil)
+		return errors.NewError("server.key not be null", nil)
 	}
 	return nil
 }

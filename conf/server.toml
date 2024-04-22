@@ -1,0 +1,13 @@
+[server]
+host="0.0.0.0"
+
+[admin]
+username="admin"
+passwd="10ac2b46-abc5-47b1-a164-005bc33475fe"
+
+[client]
+port=2024
+key="1234"
+
+[session]
+port=2023

@@ -1,0 +1,8 @@
+[main]
+export="192.168.31.*,192.168.32.*"
+name="client-1"
+
+[server]
+address="127.0.0.1:2024"
+key="1234"
+internal="123.123.123.123"

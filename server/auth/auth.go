@@ -16,29 +16,64 @@ import (
 )
 
 var (
-	TimeOut = 15 * time.Second
-)
+	Timout   = 15 * time.Second
+	complete = func(conn net.Conn, status protocol.AuthStatus) {
+		buffer := buf.WrapNew(make([]byte, protocol.AuthResponseLen))
+		defer buffer.Release()
 
-func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Message, error) {
-	buffer := buf.NewBuffer(256)
-	defer buffer.Release()
-
-	if err := conn.SetDeadline(time.Now().Add(TimeOut)); err != nil {
-		return nil, nil, errors.NewError("Auth fail, SetDeadline error", err)
-	}
-	complete := func(status protocol.AuthStatus) {
-		_ = buffer.Clear()
 		log.Debug("Write auth response body, status:[%d]", status)
 		response := protocol.NewAuthResponse(status)
 		if err := response.WriteTo(buffer); err != nil {
 			log.Warn("write to auth response error", err)
 			return
 		}
-
 		if err := conn.ReadFrom(buffer); err != nil {
 			log.Warn("Write to auth response error", err)
 			return
 		}
+	}
+)
+
+func AuthToken(conn net.Conn) (*protocol.AuthHeader, *protocol.SessionAuth, error) {
+	header, body, err := decodeAuthMsg(conn)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	sessionAuth := body.(*protocol.SessionAuth)
+	if err := VerificationToken(sessionAuth.Token); err != nil {
+		complete(conn, protocol.AuthFail)
+		return nil, nil, errors.NewError("Auth fail", err)
+	}
+	// success
+	complete(conn, protocol.AuthSuccess)
+	return header, sessionAuth, nil
+}
+
+func AuthKey(key string, conn net.Conn) (*protocol.AuthHeader, *protocol.ClientAuth, error) {
+	header, body, err := decodeAuthMsg(conn)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	clientAuth := body.(*protocol.ClientAuth)
+	if common.IsNotEmpty(key) && clientAuth.Key != key {
+		complete(conn, protocol.AuthFail)
+		return nil, nil, errors.NewError("Auth fail, client key not match", nil)
+	}
+
+	// success
+	complete(conn, protocol.AuthSuccess)
+	return header, clientAuth, nil
+}
+
+// Authentication
+func decodeAuthMsg(conn net.Conn) (*protocol.AuthHeader, proto.Message, error) {
+	buffer := buf.NewBuffer(256)
+	defer buffer.Release()
+
+	if err := conn.SetDeadline(time.Now().Add(Timout)); err != nil {
+		return nil, nil, errors.NewError("Auth fail, SetDeadline error", err)
 	}
 
 	if n, err := buffer.Write(conn, protocol.AuthHeaderLen); err != nil || n != protocol.AuthHeaderLen {
@@ -47,8 +82,8 @@ func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Mess
 				protocol.AuthHeaderLen, n), err)
 	}
 
-	var header protocol.AuthHeader
-	if err := protocol.DecodeAuthHeader(buffer, &header); err != nil {
+	header := &protocol.AuthHeader{}
+	if err := protocol.DecodeAuthHeader(buffer, header); err != nil {
 		return nil, nil, err
 	}
 
@@ -61,29 +96,8 @@ func Authentication(key string, conn net.Conn) (*protocol.AuthHeader, proto.Mess
 	default:
 		return nil, nil, errors.NewError("Unsupport AuthType: ["+string(header.Type)+"]", nil)
 	}
-
 	if err := transport.DecodeProtoMessage(conn, int(header.Len), body); err != nil {
 		return nil, nil, errors.NewError("Auth fail, DecodeAuthBody error", err)
 	}
-
-	// 验证服务端key的有效性
-	switch body.(type) {
-	case *protocol.ClientAuth:
-		clientAuth := body.(*protocol.ClientAuth)
-		if common.IsNotEmpty(key) && clientAuth.Key != key {
-			complete(protocol.AuthFail)
-			return nil, nil, errors.NewError("Auth fail, client key not match", nil)
-		}
-		log.Info("Client auth success. name: [%s], internal:[%s]", clientAuth.Name, net.ParseFromBytes(clientAuth.Internal).String())
-	case *protocol.SessionAuth:
-		sessionAuth := body.(*protocol.SessionAuth)
-		if err := Verification(sessionAuth.Token); err != nil {
-			complete(protocol.AuthFail)
-			return nil, nil, errors.NewError("Auth fail", err)
-		}
-	default:
-		return nil, nil, errors.NewError("Not support auth type", nil)
-	}
-	complete(protocol.AuthSuccess)
-	return &header, body, nil
+	return header, body, nil
 }

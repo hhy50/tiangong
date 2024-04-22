@@ -1,11 +1,20 @@
 package protocol
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/errors"
-	"strconv"
-	"time"
+)
+
+var (
+	AuthResponseLen = 16
+
+	// AuthStatus Define
+	AuthFail    AuthStatus = 0
+	AuthSuccess AuthStatus = 1
 )
 
 // AuthResponse byte length is AuthResponseLen

@@ -10,13 +10,10 @@ import (
 
 	"github.com/haiyanghan/tiangong"
 	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/conf"
 	"github.com/haiyanghan/tiangong/common/errors"
 	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/server"
-)
-
-var (
-	cp string
 )
 
 func init() {
@@ -30,14 +27,14 @@ func init() {
 	TianGong Version: %s Pid:%d Now: %s
 `
 	fmt.Printf(banner, tiangong.Version(), os.Getpid(), time.Now().Format(common.DateFormat))
-	flag.StringVar(&cp, "conf", "", "Config file path")
 }
 
 func main() {
 	flag.Parse()
 	log.InitLog()
+	conf.Load()
 
-	server, err := server.NewServer(cp)
+	server, err := server.NewServer()
 	if err != nil {
 		log.Error("Init TianGong Server error, ", err)
 		handlerError(err)

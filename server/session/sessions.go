@@ -3,28 +3,30 @@ package session
 import (
 	"context"
 
-	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/log"
-	"github.com/haiyanghan/tiangong/common/net"
-	"github.com/haiyanghan/tiangong/server/client"
+	"github.com/haiyanghan/tiangong/server/component"
 )
 
-var sessions []*Session = make([]*Session, 128)
+var (
+	ManagerCompName            = "SessionManager"
+	sessions        []*Session = make([]*Session, 128)
+)
 
-func AddSession(session *Session) error {
-	sessions = append(sessions, session)
-	log.Info("New session connected. token=%s, subHost=%s", session.Token, session.SubHost)
+type SessionManager struct {
+}
+
+func init() {
+	component.Register(ManagerCompName, func(ctx context.Context) (component.Component, error) {
+		return &SessionManager{}, nil
+	})
+}
+
+func (s SessionManager) Start() error {
 	return nil
 }
 
-func NewSession(subHost net.IpAddress, token string, conn net.Conn, ctx context.Context) Session {
-	return Session{
-		SubHost: subHost,
-		Token:   token,
-		Ctx:     ctx,
-
-		bridge: &WirelessBridging{client.Clients[subHost]},
-		buffer: buf.NewRingBuffer(),
-		conn:   conn,
-	}
+func (s *SessionManager) AddSession(session *Session) error {
+	sessions = append(sessions, session)
+	log.Info("New session connected. token=%s, subHost=%s", session.Token, session.SubHost)
+	return nil
 }

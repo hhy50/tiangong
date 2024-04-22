@@ -2,27 +2,23 @@ package protocol
 
 import (
 	"fmt"
+	"io"
+	"math"
+
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/errors"
 	"google.golang.org/protobuf/proto"
-	"io"
-	"math"
 )
 
 type AuthType = byte
 type AuthStatus = byte
 
 const (
-	AuthHeaderLen   = 16
-	AuthResponseLen = 16
+	AuthHeaderLen = 16
 
 	// AuthType Define
 	AuthSession AuthType = 1
 	AuthClient  AuthType = 2
-
-	// AuthStatus Define
-	AuthFail    AuthStatus = 0
-	AuthSuccess AuthStatus = 1
 )
 
 // AuthHeader byte length is AuthHeaderLen

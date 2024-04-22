@@ -2,18 +2,19 @@ package server
 
 import (
 	"context"
+
+	_ "github.com/haiyanghan/tiangong/server/admin"
+	_ "github.com/haiyanghan/tiangong/server/client"
+	_ "github.com/haiyanghan/tiangong/server/session"
+
 	"github.com/haiyanghan/tiangong/common"
-	"github.com/haiyanghan/tiangong/common/conf"
 	"github.com/haiyanghan/tiangong/common/lock"
 	"github.com/haiyanghan/tiangong/common/log"
-	"github.com/haiyanghan/tiangong/common/net"
-	"github.com/haiyanghan/tiangong/server/admin"
-	"github.com/haiyanghan/tiangong/server/client"
+	"github.com/haiyanghan/tiangong/server/component"
 )
 
 var (
-	ServerCnf Config
-	Running   = 1
+	Running = 1
 )
 
 type Status int8
@@ -25,11 +26,9 @@ type Server interface {
 }
 
 type tgServer struct {
-	Admin   admin.AdminServer
-	Clients map[string]*client.Client
-	Lock    lock.Lock
-	TcpSrv  net.TcpServer
-	Ctx     context.Context
+	Lock  lock.Lock
+	Comps map[string]component.Component
+	Ctx   context.Context
 
 	status int
 }
@@ -38,8 +37,8 @@ func (s *tgServer) Start() error {
 	s.Lock.Lock()
 	defer s.Lock.Unlock()
 
-	if err := s.TcpSrv.ListenTCP(connHandler); err != nil {
-		return err
+	for _, comp := range s.Comps {
+		comp.Start()
 	}
 	s.status = Running
 	return nil
@@ -55,27 +54,22 @@ func (s *tgServer) Stop() {
 	log.Warn("TianGong Server end...")
 }
 
-func NewServer(input string) (Server, error) {
-	if err := conf.LoadConfig(input, &ServerCnf, defaultValue); err != nil {
-		return nil, err
-	}
-
+func NewServer() (Server, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = context.WithValue(ctx, common.CancelFuncKey, cancel)
 
-	adm := admin.AdminServer{
-		HttpPort: ServerCnf.HttpPort,
-		UserName: ServerCnf.UserName,
-		Password: ServerCnf.Passwd,
-		Ctx:      ctx,
+	comps := map[string]component.Component{}
+	for name, compCtreator := range component.GetComponents() {
+		comp, err := compCtreator(ctx)
+		if err != nil {
+			return nil, err
+		}
+		comps[name] = comp
+		ctx = context.WithValue(ctx, name, comp)
 	}
-
-	server := &tgServer{
-		Admin:   adm,
-		Clients: make(map[string]*client.Client),
-		TcpSrv:  net.NewTcpServer(ServerCnf.Host, ServerCnf.SrvPort, ctx),
-		Lock:    lock.NewLock(),
-		Ctx:     ctx,
-	}
-	return server, nil
+	return &tgServer{
+		Comps: comps,
+		Lock:  lock.NewLock(),
+		Ctx:   ctx,
+	}, nil
 }

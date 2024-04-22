@@ -8,6 +8,7 @@ import (
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/common/net"
+	"github.com/haiyanghan/tiangong/server/client"
 	"github.com/haiyanghan/tiangong/transport/protocol"
 )
 
@@ -78,6 +79,18 @@ func (s *Session) HandlePacket() error {
 		return err
 	}
 	return nil
+}
+
+func NewSession(subHost net.IpAddress, token string, conn net.Conn, ctx context.Context) Session {
+	return Session{
+		SubHost: subHost,
+		Token:   token,
+		Ctx:     ctx,
+
+		bridge: &WirelessBridging{client.Clients[subHost]},
+		buffer: buf.NewRingBuffer(),
+		conn:   conn,
+	}
 }
 
 func discard(conn net.Conn, len int) {

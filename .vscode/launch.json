@@ -11,7 +11,7 @@
             "mode": "auto",
             "buildFlags": ["-tags", "server"],
             "program": "${workspaceFolder}/main",
-            "args": ["-conf", "${workspaceFolder}/conf/server.conf",
+            "args": ["-conf", "${workspaceFolder}/conf/server.toml",
                         "-log.level", "DEBUG"],
             "dlvFlags": ["--check-go-version=false"]
         },
@@ -22,7 +22,7 @@
             "mode": "auto",
             "buildFlags": ["-tags", "client"],
             "program": "${workspaceFolder}/main",
-            "args": ["-conf", "${workspaceFolder}/conf/client.conf",
+            "args": ["-conf", "${workspaceFolder}/conf/client.toml",
                         "-log.level", "DEBUG"],
             "dlvFlags": ["--check-go-version=false"]
         }

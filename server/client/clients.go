@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/server/component"
 
 	"github.com/haiyanghan/tiangong/common/errors"
 	"github.com/haiyanghan/tiangong/common/lock"
@@ -23,11 +24,36 @@ var (
 	MaxFreeTime = 3 * time.Minute
 )
 
-func init() {
-	StartActiveCheck()
+type ClientManager struct {
+	ctx context.Context
+
+	// Clients with Router feature
+	Clients     map[net.IpAddress]*Client
+	ClientNames map[string]*Client
+	Lock        lock.Lock
+
+	// MaxFreeTime The maximum idle time allowed to the client
+	MaxFreeTime time.Duration
 }
 
-func StartActiveCheck() {
+func init() {
+	component.Register("ClientManager", func(ctx context.Context) (component.Component, error) {
+		return &ClientManager{
+			ctx:         ctx,
+			Clients:     make(map[net.IpAddress]*Client, 128),
+			ClientNames: make(map[string]*Client, 128),
+			Lock:        lock.NewLock(),
+			MaxFreeTime: 3 * time.Minute,
+		}, nil
+	})
+}
+
+func (manager *ClientManager) Start() error {
+	manager.startActiveCheck()
+	return nil
+}
+
+func (manager ClientManager) startActiveCheck() {
 	go common.TimerFunc(func() {
 		for _, cli := range Clients {
 			now := time.Now()

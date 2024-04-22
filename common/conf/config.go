@@ -1,19 +1,25 @@
 package conf
 
 import (
+	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
 
-	"github.com/haiyanghan/tiangong/common"
-	"github.com/haiyanghan/tiangong/common/errors"
+	"github.com/haiyanghan/tiangong/common/io"
 	"github.com/haiyanghan/tiangong/common/log"
 
-	"github.com/magiconair/properties"
+	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/errors"
+	"github.com/pelletier/go-toml"
 )
 
 var (
+	path     string
+	tomlTree *toml.Tree
+
 	PropTag         = "prop"
 	DefaultValueTag = "default"
 )
@@ -28,39 +34,65 @@ var getExecPathFunc = func() string {
 
 type DefaultValueFunc = func(string) string
 
-func EmptyDefaultValueFunc(string) string {
-	return ""
+func init() {
+	flag.StringVar(&path, "conf", "", "-conf {path}")
 }
 
-func LoadConfig(input string, config interface{}, defaultProp DefaultValueFunc) error {
+func Load() {
+	if !common.FileExist(path) && !filepath.IsAbs(path) {
+		cur := getExecPathFunc()
+		path = filepath.Join(cur, path)
+	}
+	if !common.FileExist(path) {
+		panic(fmt.Sprintf("Conf file not fount path: %s", path))
+	}
+	bytes, err := io.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	tomlTree, err = toml.Load(string(bytes))
+	if err != nil {
+		panic(err)
+	}
+	log.Debug("Load config: %+v", tomlTree.String())
+}
+
+func LoadConfig(kind string, config interface{}) error {
+	if kind == "" {
+		return parse(config, ToFlatMap(tomlTree))
+	} else if kindVal, ok := tomlTree.Get(kind).(*toml.Tree); ok {
+		return parse(config, kindVal.ToMap())
+	}
+	return nil
+}
+
+func LoadToMap(kind string) map[string]interface{} {
+	if kind == "" {
+		return tomlTree.ToMap()
+	} else if kindVal, ok := tomlTree.Get(kind).(*toml.Tree); ok {
+		return kindVal.ToMap()
+	}
+	return nil
+}
+
+func GetOrDefault(key, d string) interface{} {
+	if key == "" {
+		return d
+	}
+	return tomlTree.GetDefault(key, d)
+}
+
+func parse(config interface{}, keyVal map[string]interface{}) error {
 	ptr, ok := common.GetPtr(config)
 	if !ok {
 		return errors.NewError("Param 'config' must be a pointer", nil)
 	}
-	if common.IsEmpty(input) {
-		return errors.NewError("Useage: -conf {path} to specify the configuration file", nil)
-	}
-
-	if !common.FileExist(input) && !filepath.IsAbs(input) {
-		cur := getExecPathFunc()
-		input = filepath.Join(cur, input)
-	}
-	if !common.FileExist(input) {
-		return errors.NewError("Config file not found!", nil)
-	}
-
-	prop, err := properties.LoadFile(input, properties.UTF8)
-	if err != nil {
-		return err
-	}
-	log.Debug("Load config:\n%+v", prop.String())
-
 	defaultValueMap := common.GetTags(DefaultValueTag, config)
 	val := ptr.Elem()
 	for fName, tVal := range common.GetTags(PropTag, config) {
-		value, ok := prop.Get(tVal)
-		if !ok || common.IsEmpty(value) {
-			value = defaultProp(tVal)
+		value, ok := keyVal[tVal]
+		if !ok {
+			value = keyVal[fName]
 		}
 		if common.IsEmpty(value) {
 			if v, f := defaultValueMap[fName]; f {
@@ -71,23 +103,20 @@ func LoadConfig(input string, config interface{}, defaultProp DefaultValueFunc) 
 			field := val.FieldByName(fName)
 			switch field.Kind() {
 			case reflect.String:
-				field.SetString(value)
-			case reflect.Uint,
-				reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-				i, err := strconv.Atoi(value)
-				if err != nil {
-					return err
-				}
-				field.SetUint(uint64(i))
+				field.SetString(value.(string))
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-				i, err := strconv.Atoi(value)
-				if err != nil {
-					return err
+				if str, ok := value.(string); ok {
+					i, err := strconv.Atoi(str)
+					if err != nil {
+						return err
+					}
+					field.SetInt(int64(i))
+				} else {
+					field.SetInt(value.(int64))
 				}
-				field.SetInt(int64(i))
-			case reflect.Float32:
-			case reflect.Float64:
-				i, err := strconv.ParseFloat(value, 64)
+			case reflect.Float32, reflect.Float64:
+				i, err := strconv.ParseFloat(value.(string), 64)
 				if err != nil {
 					return err
 				}
@@ -96,4 +125,18 @@ func LoadConfig(input string, config interface{}, defaultProp DefaultValueFunc) 
 		}
 	}
 	return nil
+}
+
+func ToFlatMap(tree *toml.Tree) map[string]interface{} {
+	mp := map[string]interface{}{}
+	for key, val := range tomlTree.ToMap() {
+		if submap, ok := val.(map[string]interface{}); ok {
+			for skey, sval := range submap {
+				mp[key+"."+skey] = sval
+			}
+		} else {
+			mp[key] = val
+		}
+	}
+	return mp
 }

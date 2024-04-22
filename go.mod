@@ -7,3 +7,5 @@ require (
 	github.com/magiconair/properties v1.8.7
 	google.golang.org/protobuf v1.33.0
 )
+
+require github.com/pelletier/go-toml v1.9.5 // indirect

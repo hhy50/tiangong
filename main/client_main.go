@@ -11,12 +11,11 @@ import (
 	"github.com/haiyanghan/tiangong"
 	"github.com/haiyanghan/tiangong/client"
 	"github.com/haiyanghan/tiangong/common"
+	"github.com/haiyanghan/tiangong/common/conf"
 	"github.com/haiyanghan/tiangong/common/log"
 )
 
-var (
-	cp string
-)
+var ()
 
 func init() {
 	banner := `
@@ -29,15 +28,15 @@ func init() {
 		TianGong Version: %s Pid:%d Now: %s
 `
 	fmt.Printf(banner, tiangong.Version(), os.Getpid(), time.Now().Format(common.DateFormat))
-	flag.StringVar(&cp, "conf", "", "Config file path")
 }
 
 func main() {
 	flag.Parse()
 	log.InitLog()
-	log.Info("TianGong Client start...")
+	conf.Load()
 
-	c, err := client.NewClient(cp)
+	log.Info("TianGong Client start...")
+	c, err := client.NewClient()
 	if err != nil {
 		log.Error("Create new client error", err)
 		return
