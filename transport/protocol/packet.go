@@ -16,9 +16,9 @@ const (
 type PacketHeader struct { // 20
 	Len      uint16   // 2
 	Rid      uint32   // 4
-	Protocol byte     // 1
+	Protocol Protocol // 1
 	Reserved [12]byte // 12
-	Status   byte     // 1
+	Status   Status   // 1
 }
 
 func (h *PacketHeader) WriteTo(buffer buf.Buffer) error {

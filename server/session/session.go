@@ -68,7 +68,7 @@ func (s *Session) HandlePacket() error {
 	if header.Len == 0 {
 		return nil
 	}
-	log.Debug("Receive packet header, protocol:%s, rid:%d, len:%d", protocol.Protocol(header.Protocol).String(), header.Rid, header.Len)
+	log.Debug("Receive packet header, protocol:%s, rid:%d, len:%d", protocol.ProtocolToStr(header.Protocol), header.Rid, header.Len)
 	// if n, err := s.buffer.Write(s.conn, int(header.Len)); err != nil || n != int(header.Len) {
 	// 	// discard
 	// 	discard(s.conn, int(header.Len)-n)

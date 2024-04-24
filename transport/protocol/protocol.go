@@ -1,6 +1,8 @@
 package protocol
 
-type Protocol byte
+type Protocol = byte
+
+type Status = byte
 
 const (
 	Unknown Protocol = iota
@@ -10,11 +12,15 @@ const (
 	HTTP
 	HTTPS
 	WS
+
+	New Status = iota
+	Active
+	End
 )
 
 var ()
 
-func (p Protocol) String() string {
+func ProtocolToStr(p Protocol) string {
 	switch p {
 	case TCP:
 		return "TCP"
