@@ -26,9 +26,8 @@ var (
 type Client struct {
 	Name     string
 	Internal net.IpAddress
+	Ctx      context.Context
 
-	ctx        context.Context
-	cancel     context.CancelFunc
 	auth       *protocol.ClientAuth
 	conn       net.Conn
 	lastAcTime time.Time
@@ -58,7 +57,7 @@ func (c *Client) Keepalive() {
 	defer c.Offline()
 	for {
 		select {
-		case <-c.ctx.Done():
+		case <-c.Ctx.Done():
 			runtime.Goexit()
 		default:
 			if err := c.Read(buffer); err != nil {
@@ -85,7 +84,8 @@ func (c *Client) Offline() {
 	defer Lock.Unlock()
 
 	_ = c.conn.Close()
-	c.cancel()
+	c.Ctx.Cancel()
+
 	delete(Clients, c.Internal)
 	delete(ClientNames, c.Name)
 	log.Warn("Client [%s] is offlined...", c.GetName())

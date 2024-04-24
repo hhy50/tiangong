@@ -85,7 +85,7 @@ func NewClient(ctx context.Context, internalIP net.IpAddress, cli *protocol.Clie
 	return Client{
 		Name:       cli.Name,
 		Internal:   internalIP,
-		ctx:        ctx,
+		Ctx:        ctx,
 		auth:       cli,
 		conn:       conn,
 		lastAcTime: time.Now(),

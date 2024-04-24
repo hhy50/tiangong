@@ -20,7 +20,6 @@ type Context struct {
 }
 
 func (c *Context) AddValue(name any, value any) {
-	// c.Context = context.WithValue(c.Context, name, value)
 	c.values[name] = value
 }
 
