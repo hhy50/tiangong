@@ -1,9 +1,10 @@
 package session
 
 import (
-	"context"
 	"runtime"
 	"time"
+
+	"github.com/haiyanghan/tiangong/common/context"
 
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/log"

@@ -1,8 +1,7 @@
 package component
 
 import (
-	"context"
-
+	"github.com/haiyanghan/tiangong/common/context"
 	"github.com/haiyanghan/tiangong/common/errors"
 )
 
@@ -12,12 +11,11 @@ var (
 	components = map[string]CreatorFunc{}
 )
 
-func Register(name string, creator CreatorFunc) error {
+func Register(name string, creator CreatorFunc) {
 	if _, f := components[name]; f {
-		return errors.NewError("Duplicate component "+name, nil)
+		panic(errors.NewError("Duplicate component "+name, nil))
 	}
 	components[name] = creator
-	return nil
 }
 
 func GetComponents() map[string]CreatorFunc {

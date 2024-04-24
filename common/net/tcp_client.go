@@ -1,13 +1,13 @@
 package net
 
 import (
-	"context"
 	"fmt"
 	"time"
 
+	"github.com/haiyanghan/tiangong/common/context"
+
 	"github.com/haiyanghan/tiangong/common/log"
 
-	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/errors"
 )
@@ -41,8 +41,7 @@ func (t *tcpClientImpl) Connect(handlerFunc ConnHandlerFunc) (err error) {
 		return err
 	}
 
-	ctx := context.WithValue(t.ctx, common.TcpClientKey, t)
-	if err = handlerFunc(ctx, t.conn); err != nil {
+	if err = handlerFunc(t.ctx, t.conn); err != nil {
 		log.Error("[TCP] connect closing....", err)
 		_ = t.conn.Close()
 		t.conn = nil

@@ -1,11 +1,12 @@
 package client
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/haiyanghan/tiangong/common/context"
 
 	"github.com/haiyanghan/tiangong"
 	"github.com/haiyanghan/tiangong/common"
@@ -49,9 +50,9 @@ func (s *clientImpl) Start() error {
 	}).Run(time.Minute)
 	return nil
 }
+
 func (s *clientImpl) Stop() {
-	cancel := s.ctx.Value(common.CancelFuncKey).(context.CancelFunc)
-	cancel()
+
 }
 
 func heartbeat(tcpClient net.TcpClient) {
@@ -80,10 +81,12 @@ func heartbeat(tcpClient net.TcpClient) {
 func handshake(ctx context.Context, conn net.Conn) error {
 	timeout := time.Now().Add(HandshakeTimeout)
 	buffer := buf.NewBuffer(256)
-	ctx, cancel := context.WithTimeout(ctx, HandshakeTimeout)
+	ctx = context.WithTimeout(ctx, HandshakeTimeout)
 
-	defer cancel()
-	defer buffer.Release()
+	defer func() {
+		ctx.Cancel()
+		buffer.Release()
+	}()
 
 	{
 		authBody := protocol.ClientAuth{
@@ -152,9 +155,7 @@ func NewClient() (Client, error) {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	ctx = context.WithValue(ctx, common.CancelFuncKey, cancel)
-
+	ctx := context.Empty()
 	serverAddr := strings.Split(ClientCnf.Address, ":")
 	serverPort, _ := strconv.Atoi(serverAddr[1])
 

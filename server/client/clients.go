@@ -1,16 +1,15 @@
 package client
 
 import (
-	"context"
 	"time"
 
 	"github.com/haiyanghan/tiangong/common"
-	"github.com/haiyanghan/tiangong/server/component"
-
+	"github.com/haiyanghan/tiangong/common/context"
 	"github.com/haiyanghan/tiangong/common/errors"
 	"github.com/haiyanghan/tiangong/common/lock"
 	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/common/net"
+	"github.com/haiyanghan/tiangong/server/component"
 	"github.com/haiyanghan/tiangong/transport/protocol"
 )
 
@@ -82,13 +81,11 @@ func RegistClient(c *Client) error {
 }
 
 func NewClient(ctx context.Context, internalIP net.IpAddress, cli *protocol.ClientAuth, conn net.Conn) Client {
-	ctx, cancel := context.WithCancel(ctx)
-
+	ctx = context.WithParent(&ctx)
 	return Client{
 		Name:       cli.Name,
 		Internal:   internalIP,
 		ctx:        ctx,
-		cancel:     cancel,
 		auth:       cli,
 		conn:       conn,
 		lastAcTime: time.Now(),

@@ -1,11 +1,12 @@
 package net
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/haiyanghan/tiangong/common/context"
 )
 
 // IpAddress A four byte IP address

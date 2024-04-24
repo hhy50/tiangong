@@ -1,7 +1,7 @@
 package session
 
 import (
-	"context"
+	"github.com/haiyanghan/tiangong/common/context"
 
 	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/server/component"

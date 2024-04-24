@@ -1,7 +1,7 @@
 package admin
 
 import (
-	"context"
+	"github.com/haiyanghan/tiangong/common/context"
 	"github.com/haiyanghan/tiangong/common/net"
 )
 

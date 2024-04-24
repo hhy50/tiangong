@@ -1,10 +1,10 @@
 package session
 
 import (
-	"context"
 	"time"
 
 	"github.com/haiyanghan/tiangong/common/conf"
+	"github.com/haiyanghan/tiangong/common/context"
 	"github.com/haiyanghan/tiangong/common/net"
 	"github.com/haiyanghan/tiangong/server/auth"
 	"github.com/haiyanghan/tiangong/server/component"

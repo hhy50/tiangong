@@ -1,7 +1,7 @@
 package client
 
 import (
-	"context"
+	"github.com/haiyanghan/tiangong/common/context"
 
 	"github.com/haiyanghan/tiangong/common/conf"
 	"github.com/haiyanghan/tiangong/common/net"
