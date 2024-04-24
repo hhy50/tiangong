@@ -108,7 +108,7 @@ func handshake(ctx context.Context, conn net.Conn) error {
 	}
 	select {
 	case <-ctx.Done():
-		return errors.NewError("Handshake Timeout", nil)
+		return errors.NewError("Handshake Timeout", ctx.Err())
 	default:
 		if err := conn.SetReadDeadline(timeout); err != nil {
 			return errors.NewError("SetReadDeadline error", err)

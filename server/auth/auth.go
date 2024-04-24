@@ -18,7 +18,7 @@ import (
 var (
 	Timout   = 15 * time.Second
 	complete = func(conn net.Conn, status protocol.AuthStatus) {
-		buffer := buf.WrapNew(make([]byte, protocol.AuthResponseLen))
+		buffer := buf.NewBuffer(protocol.AuthResponseLen)
 		defer buffer.Release()
 
 		log.Debug("Write auth response body, status:[%d]", status)

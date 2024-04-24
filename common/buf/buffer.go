@@ -1,8 +1,9 @@
 package buf
 
 import (
-	"github.com/haiyanghan/tiangong/common/errors"
 	"io"
+
+	"github.com/haiyanghan/tiangong/common/errors"
 )
 
 const (
@@ -14,7 +15,7 @@ var (
 )
 
 // 4k bytes memory block
-type block [_4K]byte
+type block = [_4K]byte
 
 type Buffer interface {
 	// Read byte arrays from the buffer, Returns the actual length read
@@ -39,13 +40,9 @@ func NewRingBuffer() Buffer {
 }
 
 func NewBuffer(size int) Buffer {
-	return WrapNew(make([]byte, size))
-}
-
-func WrapNew(bytes []byte) Buffer {
 	return &ByteBuffer{
-		bytes: bytes,
-		len:   len(bytes),
+		bytes: make([]byte, size),
+		len:   size,
 	}
 }
 

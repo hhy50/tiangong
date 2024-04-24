@@ -4,8 +4,6 @@ go 1.20
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/magiconair/properties v1.8.7
+	github.com/pelletier/go-toml v1.9.5
 	google.golang.org/protobuf v1.33.0
 )
-
-require github.com/pelletier/go-toml v1.9.5 // indirect
