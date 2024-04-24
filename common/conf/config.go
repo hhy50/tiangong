@@ -17,9 +17,9 @@ import (
 )
 
 var (
-	path     string
 	tomlTree *toml.Tree
 
+	ConfigPath      string
 	PropTag         = "prop"
 	DefaultValueTag = "default"
 )
@@ -35,18 +35,18 @@ var getExecPathFunc = func() string {
 type DefaultValueFunc = func(string) string
 
 func init() {
-	flag.StringVar(&path, "conf", "", "-conf {path}")
+	flag.StringVar(&ConfigPath, "conf", "", "-conf {path}")
 }
 
 func Load() {
-	if !common.FileExist(path) && !filepath.IsAbs(path) {
+	if !common.FileExist(ConfigPath) && !filepath.IsAbs(ConfigPath) {
 		cur := getExecPathFunc()
-		path = filepath.Join(cur, path)
+		ConfigPath = filepath.Join(cur, ConfigPath)
 	}
-	if !common.FileExist(path) {
-		panic(fmt.Sprintf("Conf file not fount path: %s", path))
+	if !common.FileExist(ConfigPath) {
+		panic(fmt.Sprintf("Conf file not fount ConfigPath: %s", ConfigPath))
 	}
-	bytes, err := io.ReadFile(path)
+	bytes, err := io.ReadFile(ConfigPath)
 	if err != nil {
 		panic(err)
 	}
