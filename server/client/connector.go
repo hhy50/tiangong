@@ -47,7 +47,7 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 		return err
 	}
 
-	c := buildClient(ctx, conn, cli)
+	c := NewClient(ctx, conn, cli)
 	if err := RegistClient(&c); err != nil {
 		return err
 	}

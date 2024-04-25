@@ -2,6 +2,7 @@ package session
 
 import (
 	"github.com/haiyanghan/tiangong/common/context"
+	"github.com/haiyanghan/tiangong/common/net"
 
 	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/server/component"
@@ -25,8 +26,8 @@ func (s SessionManager) Start() error {
 	return nil
 }
 
-func (s *SessionManager) AddSession(session *Session) error {
+func (s *SessionManager) AddSession(subhost net.IpAddress, session *Session) error {
 	sessions = append(sessions, session)
-	log.Info("New session connected. token=%s, subHost=%s", session.Token, session.SubHost)
+	log.Info("New session connected. token=%s, subHost=%s", session.Token, subhost)
 	return nil
 }

@@ -9,8 +9,8 @@ type AdminServer struct {
 	HttpPort int
 	UserName string
 	Password string
-	Ctx      context.Context
 
+	ctx       context.Context
 	tcpServer net.TcpServer
 }
 

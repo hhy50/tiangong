@@ -50,7 +50,7 @@ func Load() {
 	if err != nil {
 		panic(err)
 	}
-	tomlTree, err = toml.Load(string(bytes))
+	tomlTree, err = toml.Load(common.String(bytes))
 	if err != nil {
 		panic(err)
 	}

@@ -26,7 +26,7 @@ type Server interface {
 
 type tgServer struct {
 	Lock lock.Lock
-	Ctx  context.Context
+	ctx  context.Context
 
 	status int
 }
@@ -35,15 +35,15 @@ func (s *tgServer) Start() error {
 	s.Lock.Lock()
 	defer s.Lock.Unlock()
 
+	s.ctx.AddValue("Instance", s)
 	for name, _ := range component.GetComponents() {
-		value := s.Ctx.Value(name)
+		value := s.ctx.Value(name)
 		if value == nil {
 			continue
 		}
 		component := value.(component.Component)
 		component.Start()
 	}
-
 	s.status = Running
 	return nil
 }
@@ -52,7 +52,7 @@ func (s *tgServer) Stop() {
 	if s.status != Running {
 		return
 	}
-	s.Ctx.Cancel()
+	s.ctx.Cancel()
 	log.Warn("TianGong Server end...")
 }
 
@@ -68,6 +68,6 @@ func NewServer() (Server, error) {
 
 	return &tgServer{
 		Lock: lock.NewLock(),
-		Ctx:  ctx,
+		ctx:  ctx,
 	}, nil
 }

@@ -5,36 +5,35 @@ import (
 	"time"
 
 	"github.com/haiyanghan/tiangong/common/context"
+	"github.com/haiyanghan/tiangong/server/client"
 
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/common/net"
-	"github.com/haiyanghan/tiangong/server/client"
 	"github.com/haiyanghan/tiangong/transport/protocol"
 )
 
 type Session struct {
-	Token   string
-	SubHost net.IpAddress
-	Ctx     context.Context
+	Token string
 
+	ctx    context.Context
 	buffer buf.Buffer
 	conn   net.Conn
 	bridge Bridge
 }
 
-// +----+-----+--------+----------+--------+
-// |	    PacketHeader (20 byte)		   |
-// +----+-----+--------+----------+--------+
+// +-----+-----+--------+----------+--------+
+// |	    PacketHeader (20 byte)		    |
+// +-----+-----+--------+----------+--------+
 // | Len | Rid | Protol | Reserved | Status |
-// +----+-----+--------+----------+--------+
-// | 2  |  4  |   1    |   12	  |   1    |
-// +----+-----+--------+----------+--------+
+// +-----+-----+--------+----------+--------+
+// | 2   |  4  |   1    |    12	   |   1    |
+// +-----+-----+--------+----------+--------+
 func (s *Session) Work() {
 	defer s.Close()
 	for {
 		select {
-		case <-s.Ctx.Done():
+		case <-s.ctx.Done():
 			runtime.Goexit()
 		default:
 			if err := s.conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
@@ -70,34 +69,23 @@ func (s *Session) HandlePacket() error {
 		return nil
 	}
 	log.Debug("Receive packet header, protocol:%s, rid:%d, len:%d", protocol.ProtocolToStr(header.Protocol), header.Rid, header.Len)
-	// if n, err := s.buffer.Write(s.conn, int(header.Len)); err != nil || n != int(header.Len) {
-	// 	// discard
-	// 	discard(s.conn, int(header.Len)-n)
-	// 	_ = s.buffer.Clear()
-	// 	return nil
-	// }
-	if err := s.bridge.Transport(header, s.buffer); err != nil {
+	if n, err := s.buffer.Write(s.conn, int(header.Len)); err != nil || n != int(header.Len) {
+		// discard
+		_ = s.buffer.Clear()
+		return nil
+	}
+	if err := s.bridge.Transport(&header, s.buffer); err != nil {
 		return err
 	}
 	return nil
 }
 
-func NewSession(subHost net.IpAddress, token string, conn net.Conn, ctx context.Context) Session {
+func NewSession(token string, conn net.Conn, ctx context.Context, dstClient *client.Client) Session {
 	return Session{
-		SubHost: subHost,
-		Token:   token,
-		Ctx:     ctx,
-
-		bridge: &WirelessBridging{client.Clients[subHost]},
-		buffer: buf.NewRingBuffer(),
+		Token:  token,
+		ctx:    ctx,
 		conn:   conn,
+		bridge: &WirelessBridging{dstClient},
+		buffer: buf.NewRingBuffer(),
 	}
-}
-
-func discard(conn net.Conn, len int) {
-	discard := buf.NewBuffer(len)
-	discard.Write(conn, len)
-	discard.Release()
-
-	log.Warn("Discard packet, len:%d", len)
 }

@@ -3,9 +3,10 @@
 package common
 
 import (
-	"github.com/haiyanghan/tiangong/common/log"
 	"runtime"
 	"time"
+
+	"github.com/haiyanghan/tiangong/common/log"
 )
 
 func init() {
@@ -14,6 +15,6 @@ func init() {
 		length := runtime.Stack(buf, true)
 
 		monitor := "The number of active goroutine in the program: %d, detail: \n %s"
-		log.Debug(monitor, runtime.NumGoroutine(), string(buf[:length]))
+		log.Debug(monitor, runtime.NumGoroutine(), String(buf[:length]))
 	}).Run(60 * time.Second)
 }
