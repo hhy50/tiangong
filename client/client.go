@@ -81,7 +81,7 @@ func heartbeat(tcpClient net.TcpClient) {
 func handshake(ctx context.Context, conn net.Conn) error {
 	timeout := time.Now().Add(HandshakeTimeout)
 	buffer := buf.NewBuffer(256)
-	ctx = context.WithTimeout(ctx, HandshakeTimeout)
+	ctx = context.WithTimeout(&ctx, HandshakeTimeout)
 
 	defer func() {
 		ctx.Cancel()

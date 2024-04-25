@@ -52,8 +52,8 @@ func WithParent(parent context.Context) Context {
 	}
 }
 
-func WithTimeout(parent Context, duration time.Duration) Context {
-	ctx, cancel := context.WithTimeout(&parent, duration)
+func WithTimeout(parent context.Context, duration time.Duration) Context {
+	ctx, cancel := context.WithTimeout(parent, duration)
 	return Context{
 		Context: ctx,
 		cancel:  cancel,
