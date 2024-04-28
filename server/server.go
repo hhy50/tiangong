@@ -41,8 +41,10 @@ func (s *tgServer) Start() error {
 		if value == nil {
 			continue
 		}
-		component := value.(component.Component)
-		component.Start()
+		comp := value.(component.Component)
+		if err := comp.Start(); err != nil {
+			return err
+		}
 	}
 	s.status = Running
 	return nil

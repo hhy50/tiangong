@@ -2,8 +2,6 @@ package session
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/haiyanghan/tiangong/common/conf"
 	"github.com/haiyanghan/tiangong/common/context"
 	"github.com/haiyanghan/tiangong/common/errors"
@@ -15,7 +13,6 @@ import (
 
 var (
 	ConnectorCompName = "SessionConnect"
-	Timeout           = 15 * time.Second
 )
 
 type Connector struct {
@@ -50,8 +47,9 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 		return err
 	}
 
-	subHost := net.ParseFromBytes(sessionAuth.SubHost)
-	dstClient := client.GetClient(subHost)
+	subHost := net.ParseFromStr(sessionAuth.SubHost)
+	cm := ctx.Value(client.ClientManagerName).(*client.ClientManager)
+	dstClient := cm.GetClient(subHost)
 
 	if dstClient == nil {
 		return errors.NewError(fmt.Sprintf("subhost '%s' not fount", subHost.String()), nil)

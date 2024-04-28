@@ -15,24 +15,14 @@ import (
 var (
 	ClientManagerName = "ClientManager"
 
-	// Clients with Router feature
-	Clients = make(map[net.IpAddress]*Client, 128)
-	Lock    = lock.NewLock()
-
-	// MaxFreeTime The maximum idle time allowed to the client
-	MaxFreeTime = 3 * time.Minute
-
-	safe = Client{
-		Name:     "Instance",
-		Internal: NoAlloc,
-		Export:   []string{},
-	}
+	// CM Instance
+	CM *ClientManager = nil
 )
 
 type ClientManager struct {
 	ctx context.Context
 
-	// Clients with Router feature
+	// clients with Router feature
 	clients map[net.IpAddress]*Client
 	Lock    lock.Lock
 
@@ -42,49 +32,59 @@ type ClientManager struct {
 
 func init() {
 	component.Register(ClientManagerName, func(ctx context.Context) (component.Component, error) {
-		return &ClientManager{
+		CM = &ClientManager{
 			ctx:         ctx,
 			clients:     make(map[net.IpAddress]*Client, 128),
 			Lock:        lock.NewLock(),
 			MaxFreeTime: 3 * time.Minute,
-		}, nil
+		}
+		return CM, nil
 	})
 }
 
-func GetClient(internal net.IpAddress) *Client {
-	return Clients[internal]
-}
-
-func (manager *ClientManager) Start() error {
-	RegistClient(&safe)
-
-	manager.startActiveCheck()
+func (cm *ClientManager) Start() error {
+	cm.clients[NoAlloc] = &Default
+	cm.startActiveCheck()
 	return nil
 }
 
-func (manager ClientManager) startActiveCheck() {
+func (cm *ClientManager) startActiveCheck() {
 	go common.TimerFunc(func() {
-		for _, cli := range Clients {
+		for _, cli := range cm.clients {
 			if cli.Internal == NoAlloc {
 				continue
 			}
 			now := time.Now()
-			if cli.lastAcTime.Add(MaxFreeTime).Before(now) {
-				cli.Offline()
-				log.Warn("[%s] The client is not active within 3  minutes, force removal", cli.GetName())
+			if cli.lastAcTime.Add(cm.MaxFreeTime).Before(now) {
+				cm.Offline(cli)
+				log.Warn("[%s] The client is not active within 3  minutes, force removal", cli.Name)
 			}
 		}
 	}).Run(time.Minute)
 }
 
-func RegistClient(c *Client) error {
-	Lock.Lock()
-	defer Lock.Unlock()
+func (cm *ClientManager) RegisterClient(c *Client) error {
+	cm.Lock.Lock()
+	defer cm.Lock.Unlock()
 
-	if _, f := Clients[c.Internal]; f {
+	if _, f := cm.clients[c.Internal]; f {
 		return errors.NewError("Unable to add existing client, duplicate internal ip: "+c.Internal.String(), nil)
 	}
-	Clients[c.Internal] = c
-	log.Info("New client join. name: [%s], internal:[%s]", c.Name, c.Internal.String())
+	cm.clients[c.Internal] = c
+	log.Info("New client join. name: [%s], internal:[%s], export:[%s]", c.Name, c.Internal.String(), c.auth.Export)
 	return nil
+}
+
+func (cm *ClientManager) GetClient(internal net.IpAddress) *Client {
+	return cm.clients[internal]
+}
+
+func (cm *ClientManager) Offline(client *Client) {
+	for _, cli := range cm.clients {
+		if cli == client {
+			cli.ctx.Cancel()
+			_ = cli.conn.Close()
+			break
+		}
+	}
 }

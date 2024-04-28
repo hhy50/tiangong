@@ -2,8 +2,6 @@ package protocol
 
 type Protocol = byte
 
-type Status = byte
-
 const (
 	Unknown Protocol = iota
 	TCP
@@ -12,10 +10,6 @@ const (
 	HTTP
 	HTTPS
 	WS
-
-	New Status = iota
-	Active
-	End
 )
 
 var ()

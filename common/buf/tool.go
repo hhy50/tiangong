@@ -2,7 +2,6 @@ package buf
 
 import (
 	"encoding/binary"
-
 	"github.com/haiyanghan/tiangong/common"
 )
 

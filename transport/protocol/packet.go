@@ -11,25 +11,31 @@ import (
 
 const (
 	PacketHeaderLen = 10
+
+	AuthRequest Cmd = iota
+	AuthResponse
+	HeartbeatRequest
+	HeartbeatResponse
+	Data
 )
 
+type Cmd = byte
+
 type PacketHeader struct { // 10
-	Len      uint16   // 2
-	Rid      uint16   // 2
-	Protocol Protocol // 1
-	Reserved [4]byte  // 4
-	Status   Status   // 1
+	Len      uint16  // 2
+	Rid      uint16  // 2
+	Cmd      Cmd     // 1
+	reserved [5]byte // 5
 }
 
 func (h *PacketHeader) WriteTo(buffer buf.Buffer) error {
 	if buffer.Cap() < PacketHeaderLen {
-		return errors.NewError("write bytes len too short, minnum is "+strconv.Itoa(PacketHeaderLen)+"bytes", nil)
+		return errors.NewError("write bytes len too short, minimum is "+strconv.Itoa(PacketHeaderLen)+"bytes", nil)
 	}
-	buf.WriteBytes(buffer, common.Uint16ToBytes(h.Len))
-	buf.WriteBytes(buffer, common.Uint16ToBytes(h.Rid))
-	buf.WriteByte(buffer, h.Protocol)
-	buf.WriteBytes(buffer, h.Reserved[:])
-	buf.WriteByte(buffer, h.Status)
+	_ = buf.WriteBytes(buffer, common.Uint16ToBytes(h.Len))
+	_ = buf.WriteBytes(buffer, common.Uint16ToBytes(h.Rid))
+	_ = buf.WriteByte(buffer, h.Cmd)
+	_ = buf.WriteBytes(buffer, h.reserved[:])
 	return nil
 }
 
@@ -39,12 +45,11 @@ func (h *PacketHeader) ReadFrom(buffer buf.Buffer) error {
 	}
 	h.Len, _ = buf.ReadUint16(buffer)
 	h.Rid, _ = buf.ReadUint16(buffer)
-	h.Protocol, _ = buf.ReadByte(buffer)
+	h.Cmd, _ = buf.ReadByte(buffer)
 	{
-		for range h.Reserved {
-			_, _ = buf.ReadByte(buffer)
+		for i := range h.reserved {
+			h.reserved[i], _ = buf.ReadByte(buffer)
 		}
 	}
-	h.Status, _ = buf.ReadByte(buffer)
 	return nil
 }

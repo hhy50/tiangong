@@ -1,6 +1,7 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -22,9 +23,6 @@ var (
 	ConnTimeout      = 30 * time.Second
 	HandshakeTimeout = ConnTimeout
 	ClientCnf        Config
-
-	// ClientMsgType
-	Heartbeat byte = 1
 )
 
 type Client interface {
@@ -60,15 +58,13 @@ func heartbeat(tcpClient net.TcpClient) {
 		reconnect(tcpClient)
 		return
 	}
-	body := protocol.ClientMessageBody{
-		Type:      Heartbeat,
-		Timestamp: uint64(time.Now().UnixMilli()),
-	}
-
-	buffer := buf.NewBuffer(protocol.ClientMessageBodyLen)
+	buffer := buf.NewBuffer(protocol.PacketHeaderLen)
 	defer buffer.Release()
 
-	_ = body.WriteTo(buffer)
+	heartbeatReq := protocol.NewHeartbeatPacket()
+	if err := heartbeatReq.WriteTo(buffer); err != nil {
+		return
+	}
 	if err := tcpClient.Write(buffer); err != nil {
 		log.Error("Send heartbeat packet error, ", err)
 		tcpClient.Disconnect()
@@ -80,35 +76,47 @@ func heartbeat(tcpClient net.TcpClient) {
 
 func handshake(ctx context.Context, conn net.Conn) error {
 	timeout := time.Now().Add(HandshakeTimeout)
-	buffer := buf.NewBuffer(256)
 	ctx = context.WithTimeout(&ctx, HandshakeTimeout)
 
+	buffer := buf.NewBuffer(4096)
 	defer func() {
 		ctx.Cancel()
 		buffer.Release()
 	}()
 
 	{
-		authBody := protocol.ClientAuth{
+		body, err := json.Marshal(protocol.ClientAuthBody{
 			Name:     ClientCnf.Name,
-			Internal: net.ParseFromStr(ClientCnf.Internal).Bytes(),
-			Flag:     0,
+			Internal: ClientCnf.Internal,
 			Key:      ClientCnf.Key,
+			Export:   ClientCnf.Export,
+		})
+		if err != nil {
+			return err
 		}
-		header := protocol.NewAuthHeader(tiangong.VersionByte(), protocol.AuthClient)
-		header.AppendBody(&authBody)
+		header := protocol.AuthPacketHeader{
+			Rid: 0,
+			Len: uint16(len(body)),
+			Cmd: protocol.AuthRequest,
+		}
+		header.SetVersion(tiangong.VersionByte())
+		header.SetType(protocol.AuthClient)
+
 		if err := header.WriteTo(buffer); err != nil {
+			return err
+		}
+		if err := buf.WriteBytes(buffer, body); err != nil {
 			return err
 		}
 		if err := conn.SetWriteDeadline(timeout); err != nil {
 			return errors.NewError("SetWriteDeadline error", err)
 		}
-
 		if err := conn.ReadFrom(buffer); err != nil {
 			return err
 		}
 		_ = buffer.Clear()
 	}
+
 	select {
 	case <-ctx.Done():
 		return errors.NewError("Handshake Timeout", ctx.Err())
@@ -121,8 +129,8 @@ func handshake(ctx context.Context, conn net.Conn) error {
 		} else if n < protocol.AuthResponseLen {
 			return errors.NewError(fmt.Sprintf("Auth response body too short, require %d bytes, Actual return %d bytes", protocol.AuthResponseLen, n), err)
 		}
-		response := protocol.AuthResponse{}
-		if err := response.ReadFrom(buffer); err != nil || response.Status != protocol.AuthSuccess {
+		response := protocol.AuthPacketHeader{}
+		if err := response.ReadFrom(buffer); err != nil || !response.AuthSuccess() {
 			return errors.NewError("handshake fail", err)
 		}
 	}
@@ -131,7 +139,7 @@ func handshake(ctx context.Context, conn net.Conn) error {
 		return errors.NewError("SetWriteDeadline error", err)
 	}
 
-	log.Info("Connect to target server [%s] seuccess", conn.RemoteAddr().String())
+	log.Info("Connect to target server [%s] success", conn.RemoteAddr().String())
 	log.Info("Handshake success")
 	return nil
 }

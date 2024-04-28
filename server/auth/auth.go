@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -9,10 +10,7 @@ import (
 	"github.com/haiyanghan/tiangong/common/errors"
 	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/common/net"
-	"github.com/haiyanghan/tiangong/transport"
 	"github.com/haiyanghan/tiangong/transport/protocol"
-
-	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -34,41 +32,42 @@ var (
 	}
 )
 
-func AuthToken(conn net.Conn) (*protocol.AuthHeader, *protocol.SessionAuth, error) {
+func AuthToken(conn net.Conn) (*protocol.AuthPacketHeader, *protocol.SessionAuthBody, error) {
 	header, body, err := decodeAuthMsg(conn)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	sessionAuth := body.(*protocol.SessionAuth)
-	if err := VerificationToken(sessionAuth.Token); err != nil {
+	sessionAuthBody := body.(*protocol.SessionAuthBody)
+	if err := VerificationToken(sessionAuthBody.Token); err != nil {
 		complete(conn, protocol.AuthFail)
 		return nil, nil, errors.NewError("Auth fail", err)
 	}
+
 	// success
 	complete(conn, protocol.AuthSuccess)
-	return header, sessionAuth, nil
+	return header, sessionAuthBody, nil
 }
 
-func AuthKey(key string, conn net.Conn) (*protocol.AuthHeader, *protocol.ClientAuth, error) {
-	header, body, err := decodeAuthMsg(conn)
+func AuthKey(key string, conn net.Conn) (*protocol.AuthPacketHeader, *protocol.ClientAuthBody, error) {
+	clientAuth, body, err := decodeAuthMsg(conn)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	clientAuth := body.(*protocol.ClientAuth)
-	if common.IsNotEmpty(key) && clientAuth.Key != key {
+	clientAuthBody := body.(*protocol.ClientAuthBody)
+	if common.IsNotEmpty(key) && clientAuthBody.Key != key {
 		complete(conn, protocol.AuthFail)
 		return nil, nil, errors.NewError("Auth fail, client key not match", nil)
 	}
 
 	// success
 	complete(conn, protocol.AuthSuccess)
-	return header, clientAuth, nil
+	return clientAuth, clientAuthBody, nil
 }
 
-// Authentication
-func decodeAuthMsg(conn net.Conn) (*protocol.AuthHeader, proto.Message, error) {
+// decodeAuthMsg
+func decodeAuthMsg(conn net.Conn) (*protocol.AuthPacketHeader, interface{}, error) {
 	buffer := buf.NewBuffer(256)
 	defer buffer.Release()
 
@@ -76,28 +75,34 @@ func decodeAuthMsg(conn net.Conn) (*protocol.AuthHeader, proto.Message, error) {
 		return nil, nil, errors.NewError("Auth fail, SetDeadline error", err)
 	}
 
-	if n, err := buffer.Write(conn, protocol.AuthHeaderLen); err != nil || n != protocol.AuthHeaderLen {
+	if n, err := buffer.Write(conn, protocol.PacketHeaderLen); err != nil || n != protocol.PacketHeaderLen {
 		return nil, nil, errors.NewError(
 			fmt.Sprintf("Read bytes from connect too short, should minnum read %d bytes, actual reading %d bytes",
-				protocol.AuthHeaderLen, n), err)
+				protocol.PacketHeaderLen, n), err)
 	}
 
-	header := &protocol.AuthHeader{}
-	if err := protocol.DecodeAuthHeader(buffer, header); err != nil {
+	header := &protocol.AuthPacketHeader{}
+	if err := header.ReadFrom(buffer); err != nil {
 		return nil, nil, err
 	}
 
-	var body proto.Message = nil
-	switch header.Type {
-	case protocol.AuthClient:
-		body = &protocol.ClientAuth{}
-	case protocol.AuthSession:
-		body = &protocol.SessionAuth{}
-	default:
-		return nil, nil, errors.NewError("Unsupport AuthType: ["+string(header.Type)+"]", nil)
+	size := int(header.Len)
+	if n, err := buffer.Write(conn, size); err != nil || n != size {
+		return nil, nil, errors.NewError(
+			fmt.Sprintf("Read auth body from connect too short, should minnum read %d bytes, actual reading %d bytes", size, n), err)
 	}
-	if err := transport.DecodeProtoMessage(conn, int(header.Len), body); err != nil {
-		return nil, nil, errors.NewError("Auth fail, DecodeAuthBody error", err)
+
+	var body interface{}
+	switch header.AuthType() {
+	case protocol.AuthClient:
+		body = &protocol.ClientAuthBody{}
+	case protocol.AuthSession:
+		body = &protocol.SessionAuthBody{}
+	}
+
+	bytes, _ := buf.ReadAll(buffer)
+	if err := json.Unmarshal(bytes, body); err != nil {
+		return nil, nil, err
 	}
 	return header, body, nil
 }

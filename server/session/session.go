@@ -22,13 +22,6 @@ type Session struct {
 	bridge Bridge
 }
 
-// +-----+-----+--------+----------+--------+
-// |	    PacketHeader (20 byte)		    |
-// +-----+-----+--------+----------+--------+
-// | Len | Rid | Protol | Reserved | Status |
-// +-----+-----+--------+----------+--------+
-// | 2   |  4  |   1    |    12	   |   1    |
-// +-----+-----+--------+----------+--------+
 func (s *Session) Work() {
 	defer s.Close()
 	for {
@@ -57,18 +50,19 @@ func (s *Session) Close() {
 	log.Warn("Session Closed, token: %s", s.Token)
 }
 
+// HandlePacket
 func (s *Session) HandlePacket() error {
 	if _, err := s.buffer.Write(s.conn, protocol.PacketHeaderLen); err != nil {
 		return err
 	}
-	header := protocol.PacketHeader{}
+	header := protocol.DataPacket{}
 	if err := header.ReadFrom(s.buffer); err != nil {
 		return err
 	}
 	if header.Len == 0 {
 		return nil
 	}
-	log.Debug("Receive packet header, protocol:%s, rid:%d, len:%d", protocol.ProtocolToStr(header.Protocol), header.Rid, header.Len)
+	log.Debug("Receive packet header, rid:%d, len:%d", header.Rid, header.Len)
 	if n, err := s.buffer.Write(s.conn, int(header.Len)); err != nil || n != int(header.Len) {
 		// discard
 		_ = s.buffer.Clear()

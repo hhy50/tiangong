@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"reflect"
 	"runtime"
 	"strings"
@@ -22,6 +21,13 @@ import (
 
 var (
 	NoAlloc = net.IpAddress{0, 0, 0, 0}
+
+	Default = Client{
+		Name:     "Default",
+		Internal: NoAlloc,
+		Export:   []string{},
+		conn:     nil,
+	}
 )
 
 type Client struct {
@@ -30,12 +36,12 @@ type Client struct {
 	Export   []string
 
 	ctx        context.Context
-	auth       *protocol.ClientAuth
+	auth       *protocol.ClientAuthBody
 	conn       net.Conn
 	lastAcTime time.Time
 }
 
-func (c *Client) WriteHeader(header *protocol.PacketHeader) error {
+func (c *Client) WritePacket(header *protocol.DataPacket) error {
 	buffer := buf.NewBuffer(protocol.PacketHeaderLen)
 	defer buffer.Release()
 
@@ -43,7 +49,7 @@ func (c *Client) WriteHeader(header *protocol.PacketHeader) error {
 	return c.conn.ReadFrom(buffer)
 }
 
-func (c *Client) WriteBody(buffer buf.Buffer) error {
+func (c *Client) Write(buffer buf.Buffer) error {
 	return c.conn.ReadFrom(buffer)
 }
 
@@ -55,8 +61,7 @@ func (c *Client) Read(buffer buf.Buffer) error {
 		return err
 	}
 	if buffer.Len() == 0 {
-		c.Offline()
-		return errors.NewError("read empty packet, force offline", nil)
+		return errors.NewError("Read empty packet, force offline", nil)
 	}
 	return nil
 }
@@ -64,7 +69,8 @@ func (c *Client) Read(buffer buf.Buffer) error {
 func (c *Client) Keepalive() {
 	buffer := buf.NewRingBuffer()
 	defer buffer.Release()
-	defer c.Offline()
+	defer CM.Offline(c)
+
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -78,33 +84,18 @@ func (c *Client) Keepalive() {
 				}
 			}
 			c.lastAcTime = time.Now()
-			log.Debug("Receive %d bytes from client[%s]", buffer.Len(), c.GetName())
-			handlerResponse(buffer)
+			log.Debug("Receive %d bytes from client[%s-%s]", buffer.Len(), c.Name, c.Internal)
+			handlerPacket(buffer)
 		}
 	}
 }
 
-func (c *Client) Offline() {
-	Lock.Lock()
-	defer Lock.Unlock()
-
-	_ = c.conn.Close()
-	c.ctx.Cancel()
-
-	delete(Clients, c.Internal)
-	log.Warn("Client [%s] is offlined...", c.GetName())
-}
-
-func (c *Client) GetName() string {
-	return fmt.Sprintf("%s-%s", c.Name, c.Internal.String())
-}
-
-func handlerResponse(buffer buf.Buffer) {
+func handlerPacket(buffer buf.Buffer) {
 	//TODO
-	buffer.Clear()
+	_ = buffer.Clear()
 }
 
-func NewClient(ctx context.Context, conn net.Conn, cli *protocol.ClientAuth) Client {
+func NewClient(ctx context.Context, conn net.Conn, cli *protocol.ClientAuthBody) Client {
 	getInternalIpFromReq := func() net.IpAddress {
 		if len(cli.Internal) == 4 || reflect.DeepEqual(cli.Internal, NoAlloc) {
 			i := cli.Internal
@@ -113,7 +104,6 @@ func NewClient(ctx context.Context, conn net.Conn, cli *protocol.ClientAuth) Cli
 		return internal.GeneraInternalIp()
 	}
 
-	internal := getInternalIpFromReq()
 	if common.IsEmpty(cli.Name) {
 		uid, _ := uuid.NewUUID()
 		cli.Name = uid.String()
@@ -121,10 +111,10 @@ func NewClient(ctx context.Context, conn net.Conn, cli *protocol.ClientAuth) Cli
 
 	return Client{
 		Name:     cli.Name,
-		Internal: internal,
+		Internal: getInternalIpFromReq(),
 		Export:   strings.Split(cli.Export, ","),
 
-		ctx:        ctx,
+		ctx:        context.WithParent(&ctx),
 		auth:       cli,
 		conn:       conn,
 		lastAcTime: time.Now(),

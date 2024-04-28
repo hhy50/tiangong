@@ -46,9 +46,9 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 	if err != nil {
 		return err
 	}
-
 	c := NewClient(ctx, conn, cli)
-	if err := RegistClient(&c); err != nil {
+
+	if err := CM.RegisterClient(&c); err != nil {
 		return err
 	}
 	go c.Keepalive()
