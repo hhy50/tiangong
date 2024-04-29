@@ -18,14 +18,13 @@ var (
 		buffer := buf.NewBuffer(protocol.PacketHeaderLen)
 		defer buffer.Release()
 
-		log.Debug("Write auth response body, status:[%d]", status)
 		packet := protocol.NewAuthResponsePacket(status)
 		if err := protocol.EncodePacket(buffer, packet); err != nil {
-			log.Warn("write to auth response error", err)
+			log.Warn("write to auth response error, %+v", err)
 			return
 		}
 		if err := conn.ReadFrom(buffer); err != nil {
-			log.Warn("Write to auth response error", err)
+			log.Warn("Write to auth response error, %+v", err)
 			return
 		}
 	}

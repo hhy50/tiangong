@@ -1,11 +1,11 @@
 package client
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/context"
-	"github.com/haiyanghan/tiangong/common/errors"
 	"github.com/haiyanghan/tiangong/common/lock"
 	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/common/net"
@@ -57,7 +57,7 @@ func (cm *ClientManager) startActiveCheck() {
 			now := time.Now()
 			if cli.lastAcTime.Add(cm.MaxFreeTime).Before(now) {
 				cm.Offline(cli)
-				log.Warn("[%s] The client is not active within 3  minutes, force removal", cli.Name)
+				log.Warn("[%s] The client is not active within 3 minutes, force removal", cli.Name)
 			}
 		}
 	}).Run(time.Minute)
@@ -68,7 +68,7 @@ func (cm *ClientManager) RegisterClient(c *Client) error {
 	defer cm.Lock.Unlock()
 
 	if _, f := cm.clients[c.Internal]; f {
-		return errors.NewError("Unable to add existing client, duplicate internal ip: "+c.Internal.String(), nil)
+		return fmt.Errorf("unable to add existing client, duplicate internal ip: %s", c.Internal.String())
 	}
 	cm.clients[c.Internal] = c
 	log.Info("New client join. name: [%s], internal:[%s], export:[%s]", c.Name, c.Internal.String(), c.auth.Export)
@@ -80,11 +80,12 @@ func (cm *ClientManager) GetClient(internal net.IpAddress) *Client {
 }
 
 func (cm *ClientManager) Offline(client *Client) {
-	for _, cli := range cm.clients {
+	if cli, f := cm.clients[client.Internal]; f {
 		if cli == client {
 			cli.ctx.Cancel()
 			_ = cli.conn.Close()
-			break
+			log.Warn("Client [%s-%s] offline...", cli.Name, cli.Internal.String())
 		}
+		delete(cm.clients, client.Internal)
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/haiyanghan/tiangong/common/conf"
 	"github.com/haiyanghan/tiangong/common/context"
-	"github.com/haiyanghan/tiangong/common/errors"
 	"github.com/haiyanghan/tiangong/common/net"
 	"github.com/haiyanghan/tiangong/server/auth"
 	"github.com/haiyanghan/tiangong/server/client"
@@ -52,7 +51,7 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 	dstClient := cm.GetClient(subHost)
 
 	if dstClient == nil {
-		return errors.NewError(fmt.Sprintf("subhost '%s' not fount", subHost.String()), nil)
+		return fmt.Errorf("subhost '%s' not fount", subHost.String())
 	}
 
 	s := NewSession(sessionAuth.Token, conn, ctx, dstClient)

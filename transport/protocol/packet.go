@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"fmt"
+
 	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/net"
@@ -40,11 +41,14 @@ func DecodePacket(buffer buf.Buffer, conn net.Conn) (*Packet, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	body, err := DecodePacketBody(buffer, int(header.Len), conn)
-	if err != nil {
-		return nil, err
+	var body []byte
+	if header.Len > 0 {
+		body, err = DecodePacketBody(buffer, int(header.Len), conn)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	return &Packet{
 		Header: *header,
 		Body:   body,
