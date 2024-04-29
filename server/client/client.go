@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/haiyanghan/tiangong/common"
-	"github.com/haiyanghan/tiangong/common/errors"
 
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/log"
@@ -21,13 +20,6 @@ import (
 
 var (
 	NoAlloc = net.IpAddress{0, 0, 0, 0}
-
-	Default = Client{
-		Name:     "Default",
-		Internal: NoAlloc,
-		Export:   []string{},
-		conn:     nil,
-	}
 )
 
 type Client struct {
@@ -35,9 +27,8 @@ type Client struct {
 	Internal net.IpAddress
 	Export   []string
 
-	ctx        context.Context
-	auth       *protocol.ClientAuthBody
 	conn       net.Conn
+	ctx        context.Context
 	lastAcTime time.Time
 }
 
@@ -45,23 +36,15 @@ func (c *Client) Write(buffer buf.Buffer) error {
 	return c.conn.ReadFrom(buffer)
 }
 
-func (c *Client) Read(buffer buf.Buffer) error {
-	if err := c.conn.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
-		return err
-	}
-	if _, err := buffer.Write(c.conn, buffer.Cap()); err != nil {
-		return err
-	}
-	if buffer.Len() == 0 {
-		return errors.NewError("Read empty packet, force offline", nil)
-	}
-	return nil
-}
-
 func (c *Client) Keepalive() {
 	buffer := buf.NewRingBuffer()
-	defer buffer.Release()
-	defer CM.Offline(c)
+	defer func() {
+		_ = c.conn.Close()
+		buffer.Release()
+
+		cm := c.ctx.Value(ManagerName).(*Manager)
+		cm.Offline(c)
+	}()
 
 	for {
 		select {
@@ -87,10 +70,10 @@ func (c *Client) Keepalive() {
 func (c *Client) handlerPacket(packet *protocol.Packet) {
 	c.lastAcTime = time.Now()
 
-	//TODO
+	// TODO
 }
 
-func NewClient(ctx context.Context, conn net.Conn, cli *protocol.ClientAuthBody) Client {
+func NewClient(ctx context.Context, cli *protocol.ClientAuthBody) Client {
 	getInternalIpFromReq := func() net.IpAddress {
 		if len(cli.Internal) == 4 || reflect.DeepEqual(cli.Internal, NoAlloc) {
 			i := cli.Internal
@@ -109,9 +92,8 @@ func NewClient(ctx context.Context, conn net.Conn, cli *protocol.ClientAuthBody)
 		Internal: getInternalIpFromReq(),
 		Export:   strings.Split(cli.Export, ","),
 
-		ctx:        context.WithParent(&ctx),
-		auth:       cli,
-		conn:       conn,
+		conn:       ctx.Value(net.ConnValName).(net.Conn),
+		ctx:        ctx,
 		lastAcTime: time.Now(),
 	}
 }

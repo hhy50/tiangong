@@ -7,6 +7,10 @@ import (
 	"github.com/haiyanghan/tiangong/common/log"
 )
 
+const (
+	ConnValName = "net_conn"
+)
+
 type Conn interface {
 	net.Conn
 	ReadFrom(buffer buf.Buffer) error

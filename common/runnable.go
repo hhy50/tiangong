@@ -1,5 +1,11 @@
 package common
 
 type Runnable interface {
-	Run()
+	Start() error
+}
+
+type FuncRunable func() error
+
+func (fun FuncRunable) Start() error {
+	return fun()
 }

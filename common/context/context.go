@@ -40,11 +40,7 @@ func (c *Context) Cancel() {
 }
 
 func Empty() Context {
-	return WithParent(EmptyCtx)
-}
-
-func WithParent(parent context.Context) Context {
-	ctx, cancel := context.WithCancel(parent)
+	ctx, cancel := context.WithCancel(EmptyCtx)
 	return Context{
 		Context: ctx,
 		cancel:  cancel,
@@ -52,8 +48,17 @@ func WithParent(parent context.Context) Context {
 	}
 }
 
-func WithTimeout(parent context.Context, duration time.Duration) Context {
-	ctx, cancel := context.WithTimeout(parent, duration)
+func WithParent(parent Context) Context {
+	ctx, cancel := context.WithCancel(context.Context(&parent))
+	return Context{
+		Context: ctx,
+		cancel:  cancel,
+		values:  map[any]any{},
+	}
+}
+
+func WithTimeout(parent Context, duration time.Duration) Context {
+	ctx, cancel := context.WithTimeout(context.Context(&parent), duration)
 	return Context{
 		Context: ctx,
 		cancel:  cancel,

@@ -9,17 +9,17 @@ import (
 )
 
 var (
-	ManagerCompName = "SessionManager"
+	ManagerName = "SessionManager"
 )
 
 type Manager struct {
-	sessions []*Session
+	sessions map[string]*Session
 }
 
 func init() {
-	component.Register(ManagerCompName, func(ctx context.Context) (component.Component, error) {
+	component.Register(ManagerName, func(ctx context.Context) (component.Component, error) {
 		return &Manager{
-			sessions: make([]*Session, 128),
+			sessions: map[string]*Session{},
 		}, nil
 	})
 }
@@ -28,8 +28,14 @@ func (s Manager) Start() error {
 	return nil
 }
 
-func (s *Manager) AddSession(subhost net.IpAddress, session *Session) error {
-	s.sessions = append(s.sessions, session)
-	log.Info("New session connected. token=%s, subHost=%s", session.Token, subhost)
+func (s *Manager) AddSession(subhost net.IpAddress, new *Session) error {
+	s.sessions[new.Token] = new
+	log.Info("New session connected. token=%s, subHost=%s", new.Token, subhost)
+	return nil
+}
+
+func (s *Manager) Remove(session *Session) error {
+	delete(s.sessions, session.Token)
+	log.Info("The session closed. token=%s, subHost=%s", session.Token)
 	return nil
 }

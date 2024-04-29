@@ -1,5 +1,7 @@
 package component
 
+import "github.com/haiyanghan/tiangong/common"
+
 type Component interface {
-	Start() error
+	common.Runnable
 }

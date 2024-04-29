@@ -5,19 +5,11 @@ import (
 	_ "github.com/haiyanghan/tiangong/server/client"
 	_ "github.com/haiyanghan/tiangong/server/session"
 
-	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/context"
 	"github.com/haiyanghan/tiangong/common/lock"
 	"github.com/haiyanghan/tiangong/common/log"
 	"github.com/haiyanghan/tiangong/server/component"
 )
-
-var (
-	Running = 1
-)
-
-type Status int8
-type Runnable = common.Runnable
 
 type Server interface {
 	Start() error
@@ -27,15 +19,12 @@ type Server interface {
 type tgServer struct {
 	Lock lock.Lock
 	ctx  context.Context
-
-	status int
 }
 
 func (s *tgServer) Start() error {
 	s.Lock.Lock()
 	defer s.Lock.Unlock()
 
-	s.ctx.AddValue("Instance", s)
 	for name, _ := range component.GetComponents() {
 		value := s.ctx.Value(name)
 		if value == nil {
@@ -46,14 +35,10 @@ func (s *tgServer) Start() error {
 			return err
 		}
 	}
-	s.status = Running
 	return nil
 }
 
 func (s *tgServer) Stop() {
-	if s.status != Running {
-		return
-	}
 	s.ctx.Cancel()
 	log.Warn("TianGong Server end...")
 }

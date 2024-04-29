@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/haiyanghan/tiangong/common"
@@ -13,13 +14,10 @@ import (
 )
 
 var (
-	ClientManagerName = "ClientManager"
-
-	// CM Instance
-	CM *ClientManager = nil
+	ManagerName = "Manager"
 )
 
-type ClientManager struct {
+type Manager struct {
 	ctx context.Context
 
 	// clients with Router feature
@@ -31,24 +29,30 @@ type ClientManager struct {
 }
 
 func init() {
-	component.Register(ClientManagerName, func(ctx context.Context) (component.Component, error) {
-		CM = &ClientManager{
+	component.Register(ManagerName, func(ctx context.Context) (component.Component, error) {
+		return &Manager{
 			ctx:         ctx,
 			clients:     make(map[net.IpAddress]*Client, 128),
 			Lock:        lock.NewLock(),
 			MaxFreeTime: 3 * time.Minute,
-		}
-		return CM, nil
+		}, nil
 	})
 }
 
-func (cm *ClientManager) Start() error {
-	cm.clients[NoAlloc] = &Default
+func (cm *Manager) Start() error {
+	defaultClient := Client{
+		Name:     "Default",
+		Internal: NoAlloc,
+		Export:   []string{},
+		ctx:      cm.ctx,
+	}
+
+	cm.RegisterClient(&defaultClient)
 	cm.startActiveCheck()
 	return nil
 }
 
-func (cm *ClientManager) startActiveCheck() {
+func (cm *Manager) startActiveCheck() {
 	go common.TimerFunc(func() {
 		for _, cli := range cm.clients {
 			if cli.Internal == NoAlloc {
@@ -60,10 +64,15 @@ func (cm *ClientManager) startActiveCheck() {
 				log.Warn("[%s] The client is not active within 3 minutes, force removal", cli.Name)
 			}
 		}
+		runtime.GC()
 	}).Run(time.Minute)
 }
 
-func (cm *ClientManager) RegisterClient(c *Client) error {
+func (cm *Manager) GetClient(internal net.IpAddress) *Client {
+	return cm.clients[internal]
+}
+
+func (cm *Manager) RegisterClient(c *Client) error {
 	cm.Lock.Lock()
 	defer cm.Lock.Unlock()
 
@@ -71,19 +80,14 @@ func (cm *ClientManager) RegisterClient(c *Client) error {
 		return fmt.Errorf("unable to add existing client, duplicate internal ip: %s", c.Internal.String())
 	}
 	cm.clients[c.Internal] = c
-	log.Info("New client join. name: [%s], internal:[%s], export:[%s]", c.Name, c.Internal.String(), c.auth.Export)
+	log.Info("New client join. name: [%s], internal:[%s], export:[%+v]", c.Name, c.Internal.String(), c.Export)
 	return nil
 }
 
-func (cm *ClientManager) GetClient(internal net.IpAddress) *Client {
-	return cm.clients[internal]
-}
-
-func (cm *ClientManager) Offline(client *Client) {
+func (cm *Manager) Offline(client *Client) {
 	if cli, f := cm.clients[client.Internal]; f {
 		if cli == client {
 			cli.ctx.Cancel()
-			_ = cli.conn.Close()
 			log.Warn("Client [%s-%s] offline...", cli.Name, cli.Internal.String())
 		}
 		delete(cm.clients, client.Internal)

@@ -36,6 +36,10 @@ type PacketHeader struct { // 10
 	reserved [5]byte // 5
 }
 
+func (packet Packet) Len() int {
+	return PacketHeaderLen + len(packet.Body)
+}
+
 func DecodePacket(buffer buf.Buffer, conn net.Conn) (*Packet, error) {
 	header, err := DecodePacketHeader(buffer, conn)
 	if err != nil {
@@ -84,8 +88,8 @@ func DecodePacketBody(buffer buf.Buffer, len int, conn net.Conn) ([]byte, error)
 }
 
 func EncodePacket(buffer buf.Buffer, packet *Packet) error {
-	if buffer.Cap() < PacketHeaderLen+len(packet.Body) {
-		return fmt.Errorf("buffer.len too short, Minimum requirement %d bytes", PacketHeaderLen+len(packet.Body))
+	if buffer.Cap() < packet.Len() {
+		return fmt.Errorf("buffer.len too short, Minimum requirement %d bytes", packet.Len())
 	}
 	_ = buf.WriteBytes(buffer, common.Uint16ToBytes(packet.Header.Len))
 	_ = buf.WriteBytes(buffer, common.Uint16ToBytes(packet.Header.Rid))

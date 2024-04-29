@@ -75,7 +75,7 @@ func heartbeat(tcpClient net.TcpClient) {
 
 func handshake(ctx context.Context, conn net.Conn) error {
 	timeout := time.Now().Add(HandshakeTimeout)
-	ctx = context.WithTimeout(&ctx, HandshakeTimeout)
+	ctx = context.WithTimeout(ctx, HandshakeTimeout)
 
 	buffer := buf.NewBuffer(4096)
 	defer func() {
@@ -88,7 +88,7 @@ func handshake(ctx context.Context, conn net.Conn) error {
 			Name:     ClientCnf.Name,
 			Internal: ClientCnf.Internal,
 			Key:      ClientCnf.Key,
-			Export: ClientCnf.Export,
+			Export:   ClientCnf.Export,
 		}
 		packet, err := protocol.NewAuthRequestPacket(tiangong.VersionByte(), protocol.AuthClient, body)
 		if err != nil {
