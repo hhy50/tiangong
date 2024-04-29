@@ -74,9 +74,8 @@ func (c *Client) Keepalive() {
 			if packet, err := protocol.DecodePacket(buffer, c.conn); err != nil {
 				if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 					continue
-				} else {
-					runtime.Goexit()
 				}
+				return
 			} else {
 				log.Info("Receive packet, %d bytes, cmd:[%d], from client[%s-%s]", packet.Header.Len, packet.Header.Cmd, c.Name, c.Internal)
 				c.handlerPacket(packet)

@@ -29,7 +29,7 @@ func (s *Session) Work() {
 		case <-s.ctx.Done():
 			runtime.Goexit()
 		default:
-			if err := s.conn.SetDeadline(time.Now().Add(5 * time.Second)); err != nil {
+			if err := s.conn.SetDeadline(time.Now().Add(time.Second)); err != nil {
 				log.Error("SetDeadline error", err)
 				return
 			}

@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+
 	"github.com/haiyanghan/tiangong/common/conf"
 	"github.com/haiyanghan/tiangong/common/context"
 	"github.com/haiyanghan/tiangong/common/net"
@@ -47,18 +48,18 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 	}
 
 	subHost := net.ParseFromStr(sessionAuth.SubHost)
+
 	cm := ctx.Value(client.ClientManagerName).(*client.ClientManager)
 	dstClient := cm.GetClient(subHost)
-
 	if dstClient == nil {
-		return fmt.Errorf("subhost '%s' not fount", subHost.String())
+		return fmt.Errorf("subhost '%s' not fount", sessionAuth.SubHost)
 	}
 
-	s := NewSession(sessionAuth.Token, conn, ctx, dstClient)
+	session := NewSession(sessionAuth.Token, conn, ctx, dstClient)
 	manager := ctx.Value(ManagerCompName).(*Manager)
-	if err = manager.AddSession(subHost, &s); err != nil {
+	if err = manager.AddSession(subHost, &session); err != nil {
 		return err
 	}
-	go s.Work()
+	go session.Work()
 	return nil
 }
