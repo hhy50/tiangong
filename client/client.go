@@ -1,8 +1,6 @@
 package client
 
 import (
-	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -61,13 +59,14 @@ func heartbeat(tcpClient net.TcpClient) {
 	buffer := buf.NewBuffer(protocol.PacketHeaderLen)
 	defer buffer.Release()
 
-	heartbeatReq := protocol.NewHeartbeatPacket()
-	if err := heartbeatReq.WriteTo(buffer); err != nil {
+	heartbeatPacket := protocol.NewHeartbeatPacket()
+	if err := protocol.EncodePacket(buffer, heartbeatPacket); err != nil {
+		log.Error("send heartbeat packet error, ", err)
 		return
 	}
 	if err := tcpClient.Write(buffer); err != nil {
 		log.Error("Send heartbeat packet error, ", err)
-		tcpClient.Disconnect()
+		_ = tcpClient.Disconnect()
 		reconnect(tcpClient)
 		return
 	}
@@ -85,27 +84,17 @@ func handshake(ctx context.Context, conn net.Conn) error {
 	}()
 
 	{
-		body, err := json.Marshal(protocol.ClientAuthBody{
+		body := protocol.ClientAuthBody{
 			Name:     ClientCnf.Name,
 			Internal: ClientCnf.Internal,
 			Key:      ClientCnf.Key,
-			Export:   ClientCnf.Export,
-		})
+			Export: ClientCnf.Export,
+		}
+		packet, err := protocol.NewAuthRequestPacket(tiangong.VersionByte(), protocol.AuthClient, body)
 		if err != nil {
 			return err
 		}
-		header := protocol.AuthPacketHeader{
-			Rid: 0,
-			Len: uint16(len(body)),
-			Cmd: protocol.AuthRequest,
-		}
-		header.SetVersion(tiangong.VersionByte())
-		header.SetType(protocol.AuthClient)
-
-		if err := header.WriteTo(buffer); err != nil {
-			return err
-		}
-		if err := buf.WriteBytes(buffer, body); err != nil {
+		if err := protocol.EncodePacket(buffer, packet); err != nil {
 			return err
 		}
 		if err := conn.SetWriteDeadline(timeout); err != nil {
@@ -124,13 +113,10 @@ func handshake(ctx context.Context, conn net.Conn) error {
 		if err := conn.SetReadDeadline(timeout); err != nil {
 			return errors.NewError("SetReadDeadline error", err)
 		}
-		if n, err := buffer.Write(conn, protocol.AuthResponseLen); err != nil {
-			return errors.NewError("", err)
-		} else if n < protocol.AuthResponseLen {
-			return errors.NewError(fmt.Sprintf("Auth response body too short, require %d bytes, Actual return %d bytes", protocol.AuthResponseLen, n), err)
-		}
-		response := protocol.AuthPacketHeader{}
-		if err := response.ReadFrom(buffer); err != nil || !response.AuthSuccess() {
+
+		// AuthResponsePacket
+		header, err := protocol.DecodePacket(buffer, conn)
+		if err != nil || !header.AuthSuccess() {
 			return errors.NewError("handshake fail", err)
 		}
 	}

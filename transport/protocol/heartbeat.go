@@ -4,13 +4,13 @@ const (
 	HeartbeatPacketLen = PacketHeaderLen
 )
 
-type HeartbeatPacketHeader = PacketHeader
-
-func NewHeartbeatPacket() *HeartbeatPacketHeader {
-	return &HeartbeatPacketHeader{
-		Rid:      0,
-		Len:      uint16(HeartbeatPacketLen),
-		Cmd:      HeartbeatRequest,
-		reserved: [5]byte{},
+func NewHeartbeatPacket() *Packet {
+	return &Packet{
+		Header: PacketHeader{
+			Rid:      0,
+			Len:      uint16(HeartbeatPacketLen),
+			Cmd:      HeartbeatRequest,
+			reserved: [5]byte{},
+		},
 	}
 }

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/haiyanghan/tiangong/common"
@@ -16,12 +15,12 @@ import (
 var (
 	Timout   = 15 * time.Second
 	complete = func(conn net.Conn, status protocol.AuthStatus) {
-		buffer := buf.NewBuffer(protocol.AuthResponseLen)
+		buffer := buf.NewBuffer(protocol.PacketHeaderLen)
 		defer buffer.Release()
 
 		log.Debug("Write auth response body, status:[%d]", status)
-		response := protocol.NewAuthResponse(status)
-		if err := response.WriteTo(buffer); err != nil {
+		packet := protocol.NewAuthResponsePacket(status)
+		if err := protocol.EncodePacket(buffer, packet); err != nil {
 			log.Warn("write to auth response error", err)
 			return
 		}
@@ -32,7 +31,7 @@ var (
 	}
 )
 
-func AuthToken(conn net.Conn) (*protocol.AuthPacketHeader, *protocol.SessionAuthBody, error) {
+func AuthToken(conn net.Conn) (*protocol.PacketHeader, *protocol.SessionAuthBody, error) {
 	header, body, err := decodeAuthMsg(conn)
 	if err != nil {
 		return nil, nil, err
@@ -49,7 +48,7 @@ func AuthToken(conn net.Conn) (*protocol.AuthPacketHeader, *protocol.SessionAuth
 	return header, sessionAuthBody, nil
 }
 
-func AuthKey(key string, conn net.Conn) (*protocol.AuthPacketHeader, *protocol.ClientAuthBody, error) {
+func AuthKey(key string, conn net.Conn) (*protocol.PacketHeader, *protocol.ClientAuthBody, error) {
 	clientAuth, body, err := decodeAuthMsg(conn)
 	if err != nil {
 		return nil, nil, err
@@ -67,42 +66,27 @@ func AuthKey(key string, conn net.Conn) (*protocol.AuthPacketHeader, *protocol.C
 }
 
 // decodeAuthMsg
-func decodeAuthMsg(conn net.Conn) (*protocol.AuthPacketHeader, interface{}, error) {
-	buffer := buf.NewBuffer(256)
+func decodeAuthMsg(conn net.Conn) (*protocol.PacketHeader, interface{}, error) {
+	buffer := buf.NewBuffer(4096)
 	defer buffer.Release()
 
 	if err := conn.SetDeadline(time.Now().Add(Timout)); err != nil {
 		return nil, nil, errors.NewError("Auth fail, SetDeadline error", err)
 	}
 
-	if n, err := buffer.Write(conn, protocol.PacketHeaderLen); err != nil || n != protocol.PacketHeaderLen {
-		return nil, nil, errors.NewError(
-			fmt.Sprintf("Read bytes from connect too short, should minnum read %d bytes, actual reading %d bytes",
-				protocol.PacketHeaderLen, n), err)
-	}
-
-	header := &protocol.AuthPacketHeader{}
-	if err := header.ReadFrom(buffer); err != nil {
+	packet, err := protocol.DecodePacket(buffer, conn)
+	if err != nil {
 		return nil, nil, err
 	}
-
-	size := int(header.Len)
-	if n, err := buffer.Write(conn, size); err != nil || n != size {
-		return nil, nil, errors.NewError(
-			fmt.Sprintf("Read auth body from connect too short, should minnum read %d bytes, actual reading %d bytes", size, n), err)
-	}
-
 	var body interface{}
-	switch header.AuthType() {
-	case protocol.AuthClient:
-		body = &protocol.ClientAuthBody{}
+	switch packet.AuthType() {
 	case protocol.AuthSession:
 		body = &protocol.SessionAuthBody{}
+	case protocol.AuthClient:
+		body = &protocol.ClientAuthBody{}
 	}
-
-	bytes, _ := buf.ReadAll(buffer)
-	if err := json.Unmarshal(bytes, body); err != nil {
+	if err := json.Unmarshal(packet.Body, body); err != nil {
 		return nil, nil, err
 	}
-	return header, body, nil
+	return &packet.Header, body, nil
 }

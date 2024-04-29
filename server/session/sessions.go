@@ -9,25 +9,27 @@ import (
 )
 
 var (
-	ManagerCompName            = "SessionManager"
-	sessions        []*Session = make([]*Session, 128)
+	ManagerCompName = "SessionManager"
 )
 
-type SessionManager struct {
+type Manager struct {
+	sessions []*Session
 }
 
 func init() {
 	component.Register(ManagerCompName, func(ctx context.Context) (component.Component, error) {
-		return &SessionManager{}, nil
+		return &Manager{
+			sessions: make([]*Session, 128),
+		}, nil
 	})
 }
 
-func (s SessionManager) Start() error {
+func (s Manager) Start() error {
 	return nil
 }
 
-func (s *SessionManager) AddSession(subhost net.IpAddress, session *Session) error {
-	sessions = append(sessions, session)
+func (s *Manager) AddSession(subhost net.IpAddress, session *Session) error {
+	s.sessions = append(s.sessions, session)
 	log.Info("New session connected. token=%s, subHost=%s", session.Token, subhost)
 	return nil
 }

@@ -8,8 +8,8 @@ const (
 	End
 )
 
-type DataPacket = PacketHeader
+type DataPacket = Packet
 
 func (packet *DataPacket) Status() Status {
-	return packet.reserved[0]
+	return packet.Header.reserved[0]
 }

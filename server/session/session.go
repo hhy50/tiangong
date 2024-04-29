@@ -33,42 +33,29 @@ func (s *Session) Work() {
 				log.Error("SetDeadline error", err)
 				return
 			}
-			if err := s.HandlePacket(); err != nil {
+			if packet, err := protocol.DecodePacket(s.buffer, s.conn); err != nil {
 				if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 					continue
 				}
-				log.Warn("HandlePacket error, %v", err)
+				log.Error("DecodePacket error, close the session", err)
 				return
+			} else if err = s.handlePacket(packet); err != nil {
+				log.Error("handlePacket error", err)
 			}
 		}
 	}
 }
 
 func (s *Session) Close() {
-	s.buffer.Release()
 	_ = s.conn.Close()
+	s.buffer.Release()
 	log.Warn("Session Closed, token: %s", s.Token)
 }
 
 // HandlePacket
-func (s *Session) HandlePacket() error {
-	if _, err := s.buffer.Write(s.conn, protocol.PacketHeaderLen); err != nil {
-		return err
-	}
-	header := protocol.DataPacket{}
-	if err := header.ReadFrom(s.buffer); err != nil {
-		return err
-	}
-	if header.Len == 0 {
-		return nil
-	}
-	log.Debug("Receive packet header, rid:%d, len:%d", header.Rid, header.Len)
-	if n, err := s.buffer.Write(s.conn, int(header.Len)); err != nil || n != int(header.Len) {
-		// discard
-		_ = s.buffer.Clear()
-		return nil
-	}
-	if err := s.bridge.Transport(&header, s.buffer); err != nil {
+func (s *Session) handlePacket(packet *protocol.Packet) error {
+	log.Debug("Receive packet, rid:%d, len:%d", packet.Header.Rid, packet.Header.Len)
+	if err := s.bridge.Transport(packet, s.buffer); err != nil {
 		return err
 	}
 	return nil

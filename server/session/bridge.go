@@ -16,20 +16,13 @@ type WirelessBridging struct {
 	dst *client.Client
 }
 
-func (w *WirelessBridging) Transport(h *protocol.DataPacket, buffer buf.Buffer) error {
-	switch h.Status() {
-	case protocol.New | protocol.Active:
-		if err := w.dst.WritePacket(h); err != nil {
-			return err
-		}
-		if err := w.dst.Write(buffer); err != nil {
-			return err
-		}
-	case protocol.End:
-		if err := w.dst.WritePacket(h); err != nil {
-			return err
-		}
-		_ = buffer.Clear()
+func (w *WirelessBridging) Transport(packet *protocol.DataPacket, buffer buf.Buffer) error {
+	if err := protocol.EncodePacket(buffer, packet); err != nil {
+		return err
 	}
+	if err := w.dst.Write(buffer); err != nil {
+		return err
+	}
+	_ = buffer.Clear()
 	return nil
 }

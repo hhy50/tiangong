@@ -56,7 +56,7 @@ func connHandler(ctx context.Context, conn net.Conn) error {
 	}
 
 	s := NewSession(sessionAuth.Token, conn, ctx, dstClient)
-	manager := ctx.Value(ManagerCompName).(*SessionManager)
+	manager := ctx.Value(ManagerCompName).(*Manager)
 	if err = manager.AddSession(subHost, &s); err != nil {
 		return err
 	}

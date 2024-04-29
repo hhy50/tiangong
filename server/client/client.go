@@ -41,14 +41,6 @@ type Client struct {
 	lastAcTime time.Time
 }
 
-func (c *Client) WritePacket(header *protocol.DataPacket) error {
-	buffer := buf.NewBuffer(protocol.PacketHeaderLen)
-	defer buffer.Release()
-
-	_ = header.WriteTo(buffer)
-	return c.conn.ReadFrom(buffer)
-}
-
 func (c *Client) Write(buffer buf.Buffer) error {
 	return c.conn.ReadFrom(buffer)
 }
@@ -76,23 +68,27 @@ func (c *Client) Keepalive() {
 		case <-c.ctx.Done():
 			runtime.Goexit()
 		default:
-			if err := c.Read(buffer); err != nil {
+			if err := c.conn.SetReadDeadline(time.Now().Add(time.Minute)); err != nil {
+				return
+			}
+			if packet, err := protocol.DecodePacket(buffer, c.conn); err != nil {
 				if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 					continue
 				} else {
 					runtime.Goexit()
 				}
+			} else {
+				log.Info("Receive packet, %d bytes, cmd:[%d], from client[%s-%s]", packet.Header.Len, packet.Header.Cmd, c.Name, c.Internal)
+				c.handlerPacket(packet)
 			}
-			c.lastAcTime = time.Now()
-			log.Debug("Receive %d bytes from client[%s-%s]", buffer.Len(), c.Name, c.Internal)
-			handlerPacket(buffer)
 		}
 	}
 }
 
-func handlerPacket(buffer buf.Buffer) {
+func (c *Client) handlerPacket(packet *protocol.Packet) {
+	c.lastAcTime = time.Now()
+
 	//TODO
-	_ = buffer.Clear()
 }
 
 func NewClient(ctx context.Context, conn net.Conn, cli *protocol.ClientAuthBody) Client {
