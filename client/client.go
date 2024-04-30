@@ -28,18 +28,18 @@ type Client interface {
 	Stop()
 }
 
-type clientImpl struct {
+type clientImpl struct { 
 	ctx       context.Context
 	tcpClient net.TcpClient
 }
 
 func (s *clientImpl) Start() error {
 	if err := s.tcpClient.Connect(handshake); err != nil {
-		go common.OnceTimerFunc(func() {
-			log.Warn("Connect to target server error, wait retry...")
-			_ = s.Start()
-		}).Run(10 * time.Second)
-		return nil
+		// go common.OnceTimerFunc(func() {
+		// 	log.Warn("Connect to target server error, wait retry...")
+		// 	_ = s.Start()
+		// }).Run(10 * time.Second)
+		// return nil
 	}
 	go common.TimerFunc(func() {
 		heartbeat(s.tcpClient)
@@ -84,13 +84,12 @@ func handshake(ctx context.Context, conn net.Conn) error {
 	}()
 
 	{
-		body := protocol.ClientAuthBody{
+		packet, err := protocol.NewAuthRequestPacket(tiangong.VersionByte(), protocol.AuthClient, &protocol.ClientAuthBody{
 			Name:     ClientCnf.Name,
 			Internal: ClientCnf.Internal,
 			Key:      ClientCnf.Key,
 			Export:   ClientCnf.Export,
-		}
-		packet, err := protocol.NewAuthRequestPacket(tiangong.VersionByte(), protocol.AuthClient, body)
+		})
 		if err != nil {
 			return err
 		}
