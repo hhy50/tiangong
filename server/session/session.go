@@ -15,7 +15,8 @@ import (
 )
 
 type Session struct {
-	Token string
+	Token   string
+	SubHost string
 
 	ctx    context.Context
 	bridge Bridge
@@ -74,10 +75,11 @@ func (s *Session) handlePacket(packet *protocol.Packet) error {
 	return nil
 }
 
-func NewSession(ctx context.Context, token string, dstClient *client.Client) *Session {
+func NewSession(ctx context.Context, token, subHot string, dstClient *client.Client) *Session {
 	return &Session{
-		Token:  token,
-		ctx:    ctx,
-		bridge: &WirelessBridging{dstClient},
+		Token:   token,
+		SubHost: subHot,
+		ctx:     ctx,
+		bridge:  &WirelessBridging{dstClient},
 	}
 }

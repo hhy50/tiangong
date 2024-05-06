@@ -69,14 +69,16 @@ func AuthToken(packet *protocol.Packet, ctx context.Context) error {
 	}
 	complete(conn, protocol.AuthSuccess)
 
-	subhost := net.ParseFromStr(authBody.SubHost)
+	subHost := authBody.SubHost
+	token := authBody.Token
+
 	cm := ctx.Value(client.ManagerName).(*client.Manager)
 	sm := ctx.Value(session.ManagerName).(*session.Manager)
 
-	if dstClient := cm.GetClient(subhost); dstClient != nil {
+	if dstClient := cm.GetClient(net.ParseFromStr(subHost)); dstClient != nil {
 		// Add to manager
-		newSession := session.NewSession(ctx, authBody.Token, dstClient)
-		sm.AddSession(subhost, newSession)
+		newSession := session.NewSession(ctx, token, subHost, dstClient)
+		sm.AddSession(newSession)
 		go newSession.Work()
 	}
 	return nil
