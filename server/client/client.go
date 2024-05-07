@@ -45,8 +45,10 @@ func (c *Client) Keepalive() {
 		cm := c.ctx.Value(ManagerName).(*Manager)
 		cm.Offline(c)
 
-		// recover
-		common.Recover()
+		// recover()
+		if err := recover(); err != nil {
+			log.Error("goroutine panic, %+v", nil, err)
+		}
 	}()
 
 	for {

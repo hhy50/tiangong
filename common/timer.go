@@ -1,6 +1,10 @@
 package common
 
-import "time"
+import (
+	"time"
+
+	"github.com/haiyanghan/tiangong/common/log"
+)
 
 type TimerFunc func()
 
@@ -8,8 +12,12 @@ type OnceTimerFunc func()
 
 func (t TimerFunc) Run(d time.Duration) {
 	ticker := time.NewTicker(d)
-	defer ticker.Stop()
-	defer Recover()
+	defer func() {
+		if err := recover(); err != nil {
+			log.Error("goroutine panic, %+v", nil, err)
+		}
+		ticker.Stop()
+	}()
 
 	for {
 		<-ticker.C
@@ -18,7 +26,11 @@ func (t TimerFunc) Run(d time.Duration) {
 }
 
 func (t OnceTimerFunc) Run(d time.Duration) {
-	defer Recover()
+	defer func() {
+		if err := recover(); err != nil {
+			log.Error("goroutine panic, %+v", nil, err)
+		}
+	}()
 
 	after := time.After(d)
 	<-after

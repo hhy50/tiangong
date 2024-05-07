@@ -9,7 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "buildFlags": ["-tags", "server"],
+            "buildFlags": ["-tags", "server,debug"],
             "program": "${workspaceFolder}/main",
             "args": ["-conf", "${workspaceFolder}/conf/server.toml",
                         "-log.level", "DEBUG"],

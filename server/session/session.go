@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/context"
 	"github.com/haiyanghan/tiangong/server/client"
@@ -34,7 +33,9 @@ func (s *Session) Work() {
 		s.Close()
 
 		// recover()
-		common.Recover()
+		if err := recover(); err != nil {
+			log.Error("goroutine panic, %+v", nil, err)
+		}
 	}()
 
 	for {
