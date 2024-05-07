@@ -44,6 +44,9 @@ func (c *Client) Keepalive() {
 
 		cm := c.ctx.Value(ManagerName).(*Manager)
 		cm.Offline(c)
+
+		// recover
+		common.Recover()
 	}()
 
 	for {

@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/context"
 	"github.com/haiyanghan/tiangong/server/client"
@@ -31,6 +32,9 @@ func (s *Session) Work() {
 		_ = conn.Close()
 		buffer.Release()
 		s.Close()
+
+		// recover()
+		common.Recover()
 	}()
 
 	for {

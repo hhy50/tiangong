@@ -9,6 +9,7 @@ type OnceTimerFunc func()
 func (t TimerFunc) Run(d time.Duration) {
 	ticker := time.NewTicker(d)
 	defer ticker.Stop()
+	defer Recover()
 
 	for {
 		<-ticker.C
@@ -17,6 +18,8 @@ func (t TimerFunc) Run(d time.Duration) {
 }
 
 func (t OnceTimerFunc) Run(d time.Duration) {
+	defer Recover()
+
 	after := time.After(d)
 	<-after
 	t()
