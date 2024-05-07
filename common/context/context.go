@@ -49,7 +49,7 @@ func Empty() Context {
 }
 
 func WithParent(parent Context) Context {
-	ctx, cancel := context.WithCancel(context.Context(&parent))
+	ctx, cancel := context.WithCancel(&parent)
 	return Context{
 		Context: ctx,
 		cancel:  cancel,
@@ -58,7 +58,7 @@ func WithParent(parent Context) Context {
 }
 
 func WithTimeout(parent Context, duration time.Duration) Context {
-	ctx, cancel := context.WithTimeout(context.Context(&parent), duration)
+	ctx, cancel := context.WithTimeout(&parent, duration)
 	return Context{
 		Context: ctx,
 		cancel:  cancel,
