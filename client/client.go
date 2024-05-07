@@ -28,7 +28,7 @@ type Client interface {
 	Stop()
 }
 
-type clientImpl struct { 
+type clientImpl struct {
 	ctx       context.Context
 	tcpClient net.TcpClient
 }

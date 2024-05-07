@@ -9,57 +9,54 @@ var (
 	EmptyCtx = context.Background()
 )
 
-type (
-	CancelFunc = context.CancelFunc
-)
+type Context interface {
+	context.Context
+	AddValue(name any, value any)
+	Cancel()
+}
 
-type Context struct {
+type EnhanceContext struct {
 	context.Context
 	values map[any]any
 	cancel context.CancelFunc
 }
 
-func (c *Context) AddValue(name any, value any) {
+func (c *EnhanceContext) AddValue(name any, value any) {
 	c.values[name] = value
 }
 
-func (c *Context) Value(name any) any {
+func (c *EnhanceContext) Value(name any) any {
 	if v, f := c.values[name]; f {
 		return v
-	}
-	if p, ok := c.Context.(*Context); ok {
-		if v := p.Value(name); v != nil {
-			return v
-		}
 	}
 	return c.Context.Value(name)
 }
 
-func (c *Context) Cancel() {
+//
+//func Done() <-chan struct{} {
+//
+//}
+
+func (c *EnhanceContext) Cancel() {
 	c.cancel()
 }
 
 func Empty() Context {
-	ctx, cancel := context.WithCancel(EmptyCtx)
-	return Context{
+	return WithParent(EmptyCtx)
+}
+
+func WithParent(parent context.Context) Context {
+	ctx, cancel := context.WithCancel(parent)
+	return &EnhanceContext{
 		Context: ctx,
 		cancel:  cancel,
 		values:  map[any]any{},
 	}
 }
 
-func WithParent(parent Context) Context {
-	ctx, cancel := context.WithCancel(&parent)
-	return Context{
-		Context: ctx,
-		cancel:  cancel,
-		values:  map[any]any{},
-	}
-}
-
-func WithTimeout(parent Context, duration time.Duration) Context {
-	ctx, cancel := context.WithTimeout(&parent, duration)
-	return Context{
+func WithTimeout(parent context.Context, duration time.Duration) Context {
+	ctx, cancel := context.WithTimeout(parent, duration)
+	return &EnhanceContext{
 		Context: ctx,
 		cancel:  cancel,
 		values:  map[any]any{},
