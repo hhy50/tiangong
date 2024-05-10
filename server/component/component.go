@@ -1,7 +1,12 @@
 package component
 
-import "github.com/haiyanghan/tiangong/common"
-
 type Component interface {
-	common.Runnable
+	Start() error
+}
+
+type FuncComponent func() error
+
+
+func (fn FuncComponent) Start() error {
+	return fn()
 }

@@ -33,7 +33,12 @@ type Client struct {
 }
 
 func (c *Client) Write(buffer buf.Buffer) error {
-	return c.conn.ReadFrom(buffer)
+	target := c.conn
+	if target == nil {
+		// target = (nil).Dispatcher
+	}
+
+	return target.ReadFrom(buffer)
 }
 
 func (c *Client) Keepalive() {
@@ -44,11 +49,6 @@ func (c *Client) Keepalive() {
 
 		cm := c.ctx.Value(ManagerName).(*Manager)
 		cm.Offline(c)
-
-		// recover()
-		if err := recover(); err != nil {
-			log.Error("goroutine panic, %+v", nil, err)
-		}
 	}()
 
 	for {

@@ -31,11 +31,6 @@ func (s *Session) Work() {
 		_ = conn.Close()
 		buffer.Release()
 		s.Close()
-
-		// recover()
-		if err := recover(); err != nil {
-			log.Error("goroutine panic, %+v", nil, err)
-		}
 	}()
 
 	for {

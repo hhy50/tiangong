@@ -1,11 +1,26 @@
 package common
 
+import "github.com/haiyanghan/tiangong/common/log"
+
 type Runnable interface {
-	Start() error
+	Run()
 }
 
-type FuncRunable func() error
+type FuncRunable func()
 
-func (fun FuncRunable) Start() error {
-	return fun()
+func (fn FuncRunable) Run() {
+	fn()
+}
+
+func SafeRun(runner Runnable) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Error("goroutine panic, [%+v]", nil, err)
+		}
+	}()
+	runner.Run()
+}
+
+func SafeCall(runner FuncRunable) {
+	SafeRun(runner)
 }

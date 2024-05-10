@@ -52,7 +52,7 @@ func AuthKey(packet *protocol.Packet, ctx context.Context) error {
 	if err := cm.RegisterClient(&newClient); err != nil {
 		return err
 	}
-	go newClient.Keepalive()
+	go common.SafeCall(newClient.Keepalive)
 	return nil
 }
 
@@ -79,7 +79,7 @@ func AuthToken(packet *protocol.Packet, ctx context.Context) error {
 		// Add to manager
 		newSession := session.NewSession(ctx, token, subHost, dstClient)
 		sm.AddSession(newSession)
-		go newSession.Work()
+		go common.SafeCall(newSession.Work)
 	}
 	return nil
 }

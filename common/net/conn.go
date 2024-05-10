@@ -14,7 +14,6 @@ const (
 type Conn interface {
 	net.Conn
 	ReadFrom(buffer buf.Buffer) error
-	Name() string
 }
 
 type ConnWrap struct {
