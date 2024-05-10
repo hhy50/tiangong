@@ -15,29 +15,24 @@ type Context interface {
 	Cancel()
 }
 
-type EnhanceContext struct {
+type CancelContext struct {
 	context.Context
 	values map[any]any
 	cancel context.CancelFunc
 }
 
-func (c *EnhanceContext) AddValue(name any, value any) {
+func (c *CancelContext) AddValue(name any, value any) {
 	c.values[name] = value
 }
 
-func (c *EnhanceContext) Value(name any) any {
+func (c *CancelContext) Value(name any) any {
 	if v, f := c.values[name]; f {
 		return v
 	}
 	return c.Context.Value(name)
 }
 
-//
-//func Done() <-chan struct{} {
-//
-//}
-
-func (c *EnhanceContext) Cancel() {
+func (c *CancelContext) Cancel() {
 	c.cancel()
 }
 
@@ -47,7 +42,7 @@ func Empty() Context {
 
 func WithParent(parent context.Context) Context {
 	ctx, cancel := context.WithCancel(parent)
-	return &EnhanceContext{
+	return &CancelContext{
 		Context: ctx,
 		cancel:  cancel,
 		values:  map[any]any{},
@@ -56,7 +51,7 @@ func WithParent(parent context.Context) Context {
 
 func WithTimeout(parent context.Context, duration time.Duration) Context {
 	ctx, cancel := context.WithTimeout(parent, duration)
-	return &EnhanceContext{
+	return &CancelContext{
 		Context: ctx,
 		cancel:  cancel,
 		values:  map[any]any{},

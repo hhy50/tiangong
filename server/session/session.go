@@ -17,10 +17,9 @@ import (
 type Session struct {
 	Token   string
 	SubHost string
-
-	ctx    context.Context
-	bridge Bridge
-	once   sync.Once
+	ctx     context.Context
+	bridge  Bridge
+	once    sync.Once
 }
 
 func (s *Session) Work() {
@@ -38,11 +37,7 @@ func (s *Session) Work() {
 		case <-s.ctx.Done():
 			runtime.Goexit()
 		default:
-			if err := conn.SetDeadline(time.Now().Add(time.Minute)); err != nil {
-				log.Error("SetDeadline error", err)
-				return
-			}
-			if packet, err := protocol.DecodePacket(buffer, conn); err != nil {
+			if packet, err := protocol.DecodePacket(buffer, conn, time.Minute); err != nil {
 				if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 					continue
 				}
@@ -76,10 +71,19 @@ func (s *Session) handlePacket(packet *protocol.Packet) error {
 }
 
 func NewSession(ctx context.Context, token, subHot string, dstClient *client.Client) *Session {
+	var bridge Bridge
+	if dstClient.Name == "Default" {
+		bridge = &DirctClientBridging{
+			ctx: context.WithParent(ctx),
+		}
+	} else {
+		bridge = &WirelessBridging{dstClient}
+	}
+
 	return &Session{
 		Token:   token,
 		SubHost: subHot,
 		ctx:     ctx,
-		bridge:  &WirelessBridging{dstClient},
+		bridge:  bridge,
 	}
 }

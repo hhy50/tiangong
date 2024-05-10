@@ -2,9 +2,11 @@ package protocol
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/haiyanghan/tiangong/common"
 	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/errors"
 	"github.com/haiyanghan/tiangong/common/net"
 )
 
@@ -36,11 +38,23 @@ type PacketHeader struct { // 10
 	reserved [5]byte // 5
 }
 
+func (p Packet) Rid() uint16 {
+	return p.Header.Rid
+}
+
+func (p Packet) Cmd() Cmd {
+	return p.Header.Cmd
+}
+
 func (packet Packet) Len() int {
 	return PacketHeaderLen + len(packet.Body)
 }
 
-func DecodePacket(buffer buf.Buffer, conn net.Conn) (*Packet, error) {
+func DecodePacket(buffer buf.Buffer, conn net.Conn, timeout time.Duration) (*Packet, error) {
+	if err := conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
+		return nil, errors.NewError("SetReadDeadline err", err)
+	}
+
 	header, err := DecodePacketHeader(buffer, conn)
 	if err != nil {
 		return nil, err

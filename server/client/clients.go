@@ -54,11 +54,11 @@ func (cm *Manager) Start() error {
 
 func (cm *Manager) startActiveCheck() {
 	go common.TimerFunc(func() {
+		now := time.Now()
 		for _, cli := range cm.clients {
 			if cli.Internal == NoAlloc {
 				continue
 			}
-			now := time.Now()
 			if cli.lastAcTime.Add(cm.MaxFreeTime).Before(now) {
 				cm.Offline(cli)
 				log.Warn("[%s] The client is not active within 3 minutes, force removal", cli.Name)

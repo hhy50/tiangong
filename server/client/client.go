@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/haiyanghan/tiangong/common/context"
+	"github.com/haiyanghan/tiangong/common/errors"
 	"github.com/haiyanghan/tiangong/server/internal"
 
 	"github.com/google/uuid"
@@ -33,12 +34,14 @@ type Client struct {
 }
 
 func (c *Client) Write(buffer buf.Buffer) error {
-	target := c.conn
-	if target == nil {
-		// target = (nil).Dispatcher
+	var dial func(buf.Buffer) error
+	if c.conn != nil {
+		dial = c.conn.ReadFrom
 	}
-
-	return target.ReadFrom(buffer)
+	if dial == nil {
+		return errors.NewError("Unable to locate target client", nil)
+	}
+	return dial(buffer)
 }
 
 func (c *Client) Keepalive() {
@@ -56,10 +59,7 @@ func (c *Client) Keepalive() {
 		case <-c.ctx.Done():
 			runtime.Goexit()
 		default:
-			if err := c.conn.SetReadDeadline(time.Now().Add(time.Minute)); err != nil {
-				return
-			}
-			if packet, err := protocol.DecodePacket(buffer, c.conn); err != nil {
+			if packet, err := protocol.DecodePacket(buffer, c.conn, 15*time.Second); err != nil {
 				if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 					continue
 				}
@@ -75,7 +75,12 @@ func (c *Client) Keepalive() {
 func (c *Client) handlerPacket(packet *protocol.Packet) {
 	c.lastAcTime = time.Now()
 
-	// TODO
+	switch packet.Cmd() {
+	case protocol.Data:
+
+	case protocol.HeartbeatRequest:
+
+	}
 }
 
 func NewClient(ctx context.Context, cli *protocol.ClientAuthBody) Client {

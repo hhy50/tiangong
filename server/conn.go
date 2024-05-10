@@ -2,11 +2,9 @@ package server
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/haiyanghan/tiangong/common/buf"
 	"github.com/haiyanghan/tiangong/common/context"
-	"github.com/haiyanghan/tiangong/common/errors"
 	"github.com/haiyanghan/tiangong/common/net"
 	"github.com/haiyanghan/tiangong/transport/protocol"
 )
@@ -18,10 +16,7 @@ func ConnHandler(ctx context.Context, conn net.Conn) error {
 	buffer := buf.NewBuffer(4096)
 	defer buffer.Release()
 
-	if err := conn.SetReadDeadline(time.Now().Add(Timout)); err != nil {
-		return errors.NewError("Auth fail, SetReadDeadline error", err)
-	}
-	if packet, err := protocol.DecodePacket(buffer, conn); err != nil {
+	if packet, err := protocol.DecodePacket(buffer, conn, Timout); err != nil {
 		return err
 	} else {
 		switch packet.AuthType() {

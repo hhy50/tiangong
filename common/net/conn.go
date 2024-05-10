@@ -2,8 +2,10 @@ package net
 
 import (
 	"net"
+	"time"
 
 	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/errors"
 	"github.com/haiyanghan/tiangong/common/log"
 )
 
@@ -25,6 +27,10 @@ func (c ConnWrap) Name() string {
 }
 
 func (c ConnWrap) ReadFrom(buffer buf.Buffer) error {
+	if err := c.Conn.SetWriteDeadline(time.Now().Add(15*time.Second)); err != nil {
+		return errors.NewError("SetWriteDeadline err", err)
+	}
+
 	bytes, err := buf.ReadAll(buffer)
 	if err != nil {
 		return err

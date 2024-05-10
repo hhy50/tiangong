@@ -109,12 +109,8 @@ func handshake(ctx context.Context, conn net.Conn) error {
 	case <-ctx.Done():
 		return errors.NewError("Handshake Timeout", ctx.Err())
 	default:
-		if err := conn.SetReadDeadline(timeout); err != nil {
-			return errors.NewError("SetReadDeadline error", err)
-		}
-
 		// AuthResponsePacket
-		header, err := protocol.DecodePacket(buffer, conn)
+		header, err := protocol.DecodePacket(buffer, conn, timeout.Sub(time.Now()))
 		if err != nil || !header.AuthSuccess() {
 			return errors.NewError("handshake fail", err)
 		}
