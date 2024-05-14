@@ -1,0 +1,108 @@
+package main
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
+
+// 运算符列表
+var operators = []string{"+", "-", "*", "/"}
+
+func main() {
+	// 读取输入
+	var input string
+	fmt.Scanln(&input)
+	numbers := strings.Split(input, " ")
+
+	var targetStr string
+	fmt.Scanln(&targetStr)
+	target, _ := strconv.Atoi(targetStr)
+
+	// 将输入的n个数转换为整数数组
+	nums := make([]int, len(numbers))
+	for i, num := range numbers {
+		nums[i], _ = strconv.Atoi(num)
+	}
+
+	// 进行DFS查找运算表达式
+	if result := findExpression(nums, target); result != "" {
+		fmt.Println(result)
+	} else {
+		fmt.Println("false")
+	}
+}
+
+// 使用DFS查找运算表达式
+func findExpression(nums []int, target int) string {
+	n := len(nums)
+	if n == 0 {
+		return ""
+	}
+	if n == 1 {
+		if nums[0] == target {
+			return strconv.Itoa(nums[0])
+		}
+		return ""
+	}
+
+	// 对每个分割点进行DFS
+	for i := 1; i < n; i++ {
+		leftNums := nums[:i]
+		rightNums := nums[i:]
+
+		leftExpr := findExpression(leftNums, target)
+		rightExpr := findExpression(rightNums, target)
+
+		if leftExpr != "" {
+			for _, op := range operators {
+				expression := "(" + leftExpr + op + strings.Join(rightNumsToStr(rightNums), op) + ")"
+				if eval(expression) == target {
+					return expression
+				}
+			}
+		}
+		if rightExpr != "" {
+			for _, op := range operators {
+				expression := "(" + strings.Join(leftNumsToStr(leftNums), op) + op + rightExpr + ")"
+				if eval(expression) == target {
+					return expression
+				}
+			}
+		}
+	}
+	return ""
+}
+
+func numsToStr(nums []int) []string {
+	result := make([]string, len(nums))
+	for i, num := range nums {
+		result[i] = strconv.Itoa(num)
+	}
+	return result
+}
+
+func leftNumsToStr(nums []int) []string {
+	result := make([]string, len(nums))
+	for i, num := range nums {
+		result[i] = strconv.Itoa(num)
+	}
+	return result
+}
+
+func rightNumsToStr(nums []int) []string {
+	result := make([]string, len(nums))
+	for i, num := range nums {
+		result[i] = strconv.Itoa(num)
+	}
+	return result
+}
+
+// 简单的表达式求值函数
+func eval(expr string) int {
+	result, err := strconv.Atoi(expr)
+	if err == nil {
+		return result
+	}
+	return 0
+}
