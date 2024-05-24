@@ -20,6 +20,7 @@ type WirelessBridging struct {
 
 // DirctClientBridging dispatcher to client
 type DirctClientBridging struct {
+	src      *Session
 	ctx      context.Context
 	Requests map[uint16]int
 }
@@ -38,5 +39,16 @@ func (w *WirelessBridging) Transport(packet *protocol.DataPacket) error {
 }
 
 func (w *DirctClientBridging) Transport(packet *protocol.DataPacket) error {
+
+
+	switch(packet.Status()) {
+	case protocol.New:
+		// addr, port, timeout := protocol.DecodeTarget(packet.Body)
+
+
+	case protocol.Active:
+	case protocol.End:
+	}
+
 	return nil
 }

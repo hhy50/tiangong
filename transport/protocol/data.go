@@ -1,5 +1,7 @@
 package protocol
 
+import "github.com/haiyanghan/tiangong/common"
+
 type Status = byte
 
 const (
@@ -14,28 +16,6 @@ func (packet *DataPacket) Status() Status {
 	return packet.Header.reserved[0]
 }
 
-// func NewDataPacketW(host string, port, timeout, rid uint16) *DataPacket {
-// 	buffer := buf.NewBuffer(256)
-// 	defer buffer.Release()
-
-// 	buf.WriteBytes(buffer, []byte(host))
-// 	buf.WriteBytes(buffer, common.Uint16ToBytes(port))
-// 	buf.WriteBytes(buffer, common.Uint16ToBytes(timeout))
-
-// 	body, _ := buf.ReadAll(buffer)
-
-// 	packet := DataPacket{
-// 		Header: PacketHeader{
-// 			Len:      uint16(buffer.Len()),
-// 			Rid:      rid,
-// 			Cmd:      Data,
-// 			reserved: [5]byte{New},
-// 		},
-// 		Body: body,
-// 	}
-// 	return &packet
-// }
-
 func NewDataPacket(rid uint16, status Status, body []byte) *DataPacket {
 	packet := DataPacket{
 		Header: PacketHeader{
@@ -47,4 +27,21 @@ func NewDataPacket(rid uint16, status Status, body []byte) *DataPacket {
 		Body: body,
 	}
 	return &packet
+}
+
+func EncodeTarget(addr string, port uint16, timeout uint16) []byte {
+	n := len(addr)
+	bytes := make([]byte, n+4)
+	copy(bytes[:n], []byte(addr))
+	copy(bytes[n:n+2], common.Uint16ToBytes(port))
+	copy(bytes[n+2:n+4], common.Uint16ToBytes(timeout))
+	return bytes
+}
+
+func DecodeTarget(bytes []byte) (addr string, port uint16, timeout uint16) {
+	n := len(bytes)
+	timeout = common.Uint16(bytes[n-2:n])
+	port = common.Uint16(bytes[n-4:n-2])
+	addr = common.String(bytes[0:n-4])
+	return
 }

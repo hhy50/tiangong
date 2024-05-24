@@ -71,10 +71,11 @@ func (s *Session) handlePacket(packet *protocol.Packet) error {
 }
 
 func NewSession(ctx context.Context, token, subHot string, dstClient *client.Client) *Session {
+	ctx = context.WithParent(ctx)
 	var bridge Bridge
 	if dstClient.Name == "Default" {
 		bridge = &DirctClientBridging{
-			ctx: context.WithParent(ctx),
+			ctx: ctx,
 		}
 	} else {
 		bridge = &WirelessBridging{dstClient}
