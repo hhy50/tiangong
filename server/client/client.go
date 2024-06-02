@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/haiyanghan/tiangong/common/context"
-	"github.com/haiyanghan/tiangong/common/errors"
 	"github.com/haiyanghan/tiangong/server/internal"
 
 	"github.com/google/uuid"
@@ -24,30 +23,19 @@ var (
 )
 
 type Client struct {
+	net.Conn
 	Name     string
 	Internal net.IpAddress
 	Export   []string
 
-	conn       net.Conn
 	ctx        context.Context
 	lastAcTime time.Time
-}
-
-func (c *Client) Write(buffer buf.Buffer) error {
-	var dial func(buf.Buffer) error
-	if c.conn != nil {
-		dial = c.conn.ReadFrom
-	}
-	if dial == nil {
-		return errors.NewError("Unable to locate target client", nil)
-	}
-	return dial(buffer)
 }
 
 func (c *Client) Keepalive() {
 	buffer := buf.NewRingBuffer()
 	defer func() {
-		_ = c.conn.Close()
+		_ = c.Conn.Close()
 		buffer.Release()
 
 		cm := c.ctx.Value(ManagerName).(*Manager)
@@ -59,7 +47,7 @@ func (c *Client) Keepalive() {
 		case <-c.ctx.Done():
 			runtime.Goexit()
 		default:
-			if packet, err := protocol.DecodePacket(buffer, c.conn, 15*time.Second); err != nil {
+			if packet, err := protocol.DecodePacket(buffer, c.Conn, 15*time.Second); err != nil {
 				if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 					continue
 				}
@@ -76,7 +64,7 @@ func (c *Client) handlerPacket(packet *protocol.Packet) {
 	c.lastAcTime = time.Now()
 
 	switch packet.Cmd() {
-	case protocol.Data:
+	case protocol.DataResponse:
 
 	case protocol.HeartbeatRequest:
 
@@ -84,6 +72,7 @@ func (c *Client) handlerPacket(packet *protocol.Packet) {
 }
 
 func NewClient(ctx context.Context, cli *protocol.ClientAuthBody) Client {
+	ctx = context.WithParent(ctx)
 	getInternalIpFromReq := func() net.IpAddress {
 		if len(cli.Internal) == 4 || reflect.DeepEqual(cli.Internal, NoAlloc) {
 			i := cli.Internal
@@ -98,11 +87,11 @@ func NewClient(ctx context.Context, cli *protocol.ClientAuthBody) Client {
 	}
 
 	return Client{
+		Conn:     ctx.Value(net.ConnValName).(net.Conn),
 		Name:     cli.Name,
 		Internal: getInternalIpFromReq(),
 		Export:   strings.Split(cli.Export, ","),
 
-		conn:       ctx.Value(net.ConnValName).(net.Conn),
 		ctx:        ctx,
 		lastAcTime: time.Now(),
 	}

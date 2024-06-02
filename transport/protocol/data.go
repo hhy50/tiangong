@@ -29,6 +29,18 @@ func NewDataPacket(rid uint16, status Status, body []byte) *DataPacket {
 	return &packet
 }
 
+func NewResponsePacket(rid uint16, body []byte) *DataPacket {
+	packet := DataPacket{
+		Header: PacketHeader{
+			Len: uint16(len(body)),
+			Rid: rid,
+			Cmd: DataResponse,
+		},
+		Body: body,
+	}
+	return &packet
+}
+
 func EncodeTarget(addr string, port uint16, timeout uint16) []byte {
 	n := len(addr)
 	bytes := make([]byte, n+4)
@@ -40,8 +52,8 @@ func EncodeTarget(addr string, port uint16, timeout uint16) []byte {
 
 func DecodeTarget(bytes []byte) (addr string, port uint16, timeout uint16) {
 	n := len(bytes)
-	timeout = common.Uint16(bytes[n-2:n])
-	port = common.Uint16(bytes[n-4:n-2])
-	addr = common.String(bytes[0:n-4])
+	timeout = common.Uint16(bytes[n-2 : n])
+	port = common.Uint16(bytes[n-4 : n-2])
+	addr = common.String(bytes[0 : n-4])
 	return
 }

@@ -18,6 +18,7 @@ const (
 	HeartbeatRequest
 	HeartbeatResponse
 	Data
+	DataResponse
 )
 
 var (

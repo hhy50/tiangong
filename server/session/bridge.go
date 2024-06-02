@@ -4,25 +4,28 @@ import (
 	"context"
 
 	"github.com/haiyanghan/tiangong/common/buf"
+	"github.com/haiyanghan/tiangong/common/net"
 	"github.com/haiyanghan/tiangong/server/client"
 	"github.com/haiyanghan/tiangong/transport/protocol"
 )
 
-// session to Bridge, one to one
+// Bridge seesion to client
+// and client reponse to session
 type Bridge interface {
 	Transport(*protocol.DataPacket) error
 }
 
 // WirelessBridging point to point
 type WirelessBridging struct {
-	dst *client.Client
+	Requests map[uint16]int
+	src      net.Conn
+	dst      *client.Client
 }
 
 // DirctClientBridging dispatcher to client
 type DirctClientBridging struct {
-	src      *Session
-	ctx      context.Context
-	Requests map[uint16]int
+	src *Session
+	ctx context.Context
 }
 
 func (w *WirelessBridging) Transport(packet *protocol.DataPacket) error {
@@ -32,7 +35,15 @@ func (w *WirelessBridging) Transport(packet *protocol.DataPacket) error {
 	if err := protocol.EncodePacket(buffer, packet); err != nil {
 		return err
 	}
-	if err := w.dst.Write(buffer); err != nil {
+
+	var dial func(buf.Buffer) error
+	if packet.Cmd() == protocol.Data {
+		dial = w.dst.ReadFrom
+	} else {
+		dial = w.src.ReadFrom
+	}
+
+	if err := dial(buffer); err != nil {
 		return err
 	}
 	return nil
@@ -40,11 +51,9 @@ func (w *WirelessBridging) Transport(packet *protocol.DataPacket) error {
 
 func (w *DirctClientBridging) Transport(packet *protocol.DataPacket) error {
 
-
-	switch(packet.Status()) {
+	switch packet.Status() {
 	case protocol.New:
 		// addr, port, timeout := protocol.DecodeTarget(packet.Body)
-
 
 	case protocol.Active:
 	case protocol.End:

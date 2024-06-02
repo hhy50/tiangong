@@ -78,7 +78,10 @@ func NewSession(ctx context.Context, token, subHot string, dstClient *client.Cli
 			ctx: ctx,
 		}
 	} else {
-		bridge = &WirelessBridging{dstClient}
+		bridge = &WirelessBridging{
+			src: ctx.Value(net.ConnValName).(net.Conn),
+			dst: dstClient,
+		}
 	}
 
 	return &Session{
