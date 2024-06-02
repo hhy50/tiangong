@@ -9,7 +9,7 @@ import (
 	"github.com/haiyanghan/tiangong/transport/protocol"
 )
 
-// Bridge seesion to client
+// Bridge session to client
 // and client reponse to session
 type Bridge interface {
 	Transport(*protocol.DataPacket) error
