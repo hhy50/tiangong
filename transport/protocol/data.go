@@ -20,7 +20,7 @@ func NewDataPacket(rid uint16, status Status, body []byte) *DataPacket {
 	packet := DataPacket{
 		Header: PacketHeader{
 			Len:      uint16(len(body)),
-			Rid:      rid,
+			Rid:      uint32(rid),
 			Cmd:      Data,
 			reserved: [5]byte{status},
 		},
@@ -29,7 +29,7 @@ func NewDataPacket(rid uint16, status Status, body []byte) *DataPacket {
 	return &packet
 }
 
-func NewResponsePacket(rid uint16, body []byte) *DataPacket {
+func NewResponsePacket(rid uint32, body []byte) *DataPacket {
 	packet := DataPacket{
 		Header: PacketHeader{
 			Len: uint16(len(body)),

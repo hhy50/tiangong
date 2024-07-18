@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	PacketHeaderLen = 10
+	PacketHeaderLen = 12
 
 	AuthRequest Cmd = iota
 	AuthResponse
@@ -22,7 +22,8 @@ const (
 )
 
 var (
-	EmptyBody = make([]byte, 0)
+	EmptyBody        = make([]byte, 0)
+	RidMask   uint32 = 0xFF_FF
 )
 
 type Cmd = byte
@@ -32,15 +33,15 @@ type Packet struct {
 	Body   []byte
 }
 
-type PacketHeader struct { // 10
+type PacketHeader struct {
 	Len      uint16  // 2
-	Rid      uint16  // 2
+	Rid      uint32  // 4
 	Cmd      Cmd     // 1
 	reserved [5]byte // 5
 }
 
 func (p Packet) Rid() uint16 {
-	return p.Header.Rid
+	return uint16(p.Header.Rid & RidMask)
 }
 
 func (p Packet) Cmd() Cmd {
@@ -83,7 +84,7 @@ func DecodePacketHeader(buffer buf.Buffer, conn net.Conn) (*PacketHeader, error)
 
 	header := &PacketHeader{}
 	header.Len, _ = buf.ReadUint16(buffer)
-	header.Rid, _ = buf.ReadUint16(buffer)
+	header.Rid, _ = buf.ReadUint32(buffer)
 	header.Cmd, _ = buf.ReadByte(buffer)
 	{
 		for i := range header.reserved {
@@ -107,7 +108,7 @@ func EncodePacket(buffer buf.Buffer, packet *Packet) error {
 		return fmt.Errorf("buffer.len too short, Minimum requirement %d bytes", packet.Len())
 	}
 	_ = buf.WriteBytes(buffer, common.Uint16ToBytes(packet.Header.Len))
-	_ = buf.WriteBytes(buffer, common.Uint16ToBytes(packet.Header.Rid))
+	_ = buf.WriteBytes(buffer, common.Uint32ToBytes(packet.Header.Rid))
 	_ = buf.WriteByte(buffer, packet.Header.Cmd)
 	_ = buf.WriteBytes(buffer, packet.Header.reserved[:])
 	_ = buf.WriteBytes(buffer, packet.Body)
