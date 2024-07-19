@@ -16,7 +16,7 @@ var (
 )
 
 func init() {
-	component.Register("TcpServer", func(ctx context.Context) (component.Component, error) {
+	component.Register("TcpConnector", func(ctx context.Context) (component.Component, error) {
 		conf.LoadConfig("server", &Config)
 		return component.FuncComponent(func() error {
 			tcpServer := net.NewTcpServer(Config.Host, Config.Port, ctx)
